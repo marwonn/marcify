@@ -11,7 +11,7 @@ Mood-based playlist generator and analyzer. Create personal playlists based on s
 ![screenshot](./screenshots/screenshot_1.png)
 This is an step-by-step guide how to deploy a Flask-App on render.com. I use the free tier without a database.
 
-The original project is hosted on Heroku. The source for that can be found [here](https://github.com/marwonn/spotify-playlist-generator-analyzer).
+The original project is [hosted on Heroku](https://marcify.herokuapp.com). The source for that can be found [here](https://github.com/marwonn/spotify-playlist-generator-analyzer).
 <br/><br/>
 
 ## Table of Contents
@@ -42,19 +42,19 @@ The original project is hosted on Heroku. The source for that can be found [here
 
 ### Authenticate App to Spotify
 - Go to your [dashboard](https://developer.spotify.com/dashboard/) and create a new app. 
-- Edit settings an add a redirect URL. The redirect URL should look like this https://*NAME-OF-YOUR-WEB-SERVICE-ON-RENDER*.onrender.com/spotify-oauth2callback
+- Edit settings an add a redirect URL. The redirect URL should look like this ```https://*NAME-OF-YOUR-WEB-SERVICE*.onrender.com/spotify-oauth2callback```
 - Go to 'User and Access' and add a new user. I use my personal Spotify account. Adding up to 25 users is possible in the free version.
 
 ### Deploy App on Render
 - Go to your [dashboard](https://dashboard.render.com) and add a new 'Web Service'.
 - Connect your GitHub account and specify the repository url.
 - Adjust the follwowing entries:
-   - Name: Needs to be the same as in the redirect URL.
+   - Name: Needs to be the same as the first part of the redirect URL.
    - Region: Choose your region.
    - Root directory: Stays unchanged.
    - Start command: Change to ```gunicorn wsgi:app``` (as defined in ```wsgi.py```).
    - Add evironment variables (Key:Value):
-     - REDIRECT_URL:https://*NAME-OF-YOUR-WEB-SERVICE-ON-RENDER*.onrender.com/spotify-oauth2callback
+     - REDIRECT_URL:https://*NAME-OF-YOUR-WEB-SERVICE*.onrender.com/spotify-oauth2callback
      - SECRET_KEY:Random secret like 1234
      - SPOTIFY_CLIENT_ID:can be found under your [dashboard](https://dashboard.render.com) 
      - SPOTIFY_CLIENT_SECRET:can be found under your [dashboard](https://dashboard.render.com)

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Playlist Analyzer</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  
+    <link rel="stylesheet" type="text/css" href="../static/css/site.css" />
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="{{url_for('static', filename='js/main.js')}}"></script>
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <a style="color: white;" class="navbar-brand" href="{{ url_for('index') }}"> <small>Generator</small><span class="sr-only">(current)</span></a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </nav>
+
+    <div class="jumbotron text-center">
+        <h1>Magic Music Analyzer</h1> <span class="badge badge-warning">by marcify</span>
+       
+        <br>
+        <br>
+
+        <div class="row justify-content-center">
+            <div class="col">
+
+                <!-- Button trigger modal -->
+                <button type="button" class="btn btn-info" data-toggle="modal" data-target="#exampleModal">
+                    What?
+                </button>
+                
+                <!-- Modal -->
+                <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                    <div class="modal-content" style="background-color:lightgray;">
+                        <div class="modal-header">
+                        <h5 class="modal-title popup" id="exampleModalLabel"><b>What does the graphic tell you?</b></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="popup">
+                                <p>You see your personal music profile based on your most listend music 
+                                compared against the TOP 500 Evergreens from the Rolling Stones Magazine and
+                                the Top Tracks Germany in 2020.</p>
+                                <p>Toggle between the different profiles via clicking the legend items.</p>
+                                <b>What are these weired categories about?</b>
+                                <ul>
+                                    <li>Acousticness: A confidence measure whether the track is acoustic.</li>
+                                    <li>Danceability: Describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity.</li>
+                                    <li>Energy: Represents a perceptual measure of intensity and activity. Typically, energetic tracks feel fast, loud, and noisy. For example, death metal has high energy, while a Bach prelude scores low on the scale.</li>
+                                    <li>Liveness: Detects the presence of an audience in the recording.</li>
+                                    <li>Speechiness: Detects the presence of spoken words in a track. The more exclusively speech-like the recording (e.g. talk show, audiobook, poetry).</li>
+                                    <li>Valance: Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry).</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+                <!--Modal End-->
+    </div>
+
+    <!-- Interactive Graphic Section-->
+    <div class="container" align="center">
+        <h4 style="color: goldenrod; text-align: center">Your Music Profile</h4>
+        <embed type="image/svg+xml" src={{radar_chart|safe}} style='max-width:1000px'/>
+    </div>
+    <!-- Interactive Graphic Section End-->
+
+    <div class="container d-flex justify-content-center">
+        <div class="row">
+            <div class="col-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                          <tbody>
+                            <h4 style="color: goldenrod; text-align: center">Your TOP 10 <small>- most played tracks</small></h4>
+                            {% for entry in table_data %}
+                            {% if loop.index <= 10 %}
+                            <tr>
+                                <td style="color: whitesmoke; text-align:left">{{ entry[0]}}. {{ entry[1] }} <br> 
+                                    <small><strong><sub>by </sub></strong><i>{{ entry[2] }}</small> <sup>| Popularity {{ entry[3] }} of 100 |</sup></i></td>
+                                <td><span style="text-align: right"><img src="{{ entry[4] }}" alt="album cover" width="64" height="64"></span></td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                          </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

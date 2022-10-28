@@ -11,7 +11,7 @@ Mood-based playlist generator and analyzer. Create personal playlists based on s
 ![screenshot](./screenshots/screenshot_1.png)
 This is an step-by-step guide how to deploy a Flask-App on render.com. I use the free tier without a database.
 
-The original project is [hosted on Heroku](https://marcify.herokuapp.com). The source for that can be found [here](https://github.com/marwonn/spotify-playlist-generator-analyzer).
+The original project is still [hosted on Heroku](https://marcify.herokuapp.com). The source for that can be found [here](https://github.com/marwonn/spotify-playlist-generator-analyzer).
 <br/><br/>
 
 ## Table of Contents

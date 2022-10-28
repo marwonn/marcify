@@ -1,4 +1,6 @@
-![Python3](https://img.shields.io/badge/Python-3-brightgreen) ![Flask](https://img.shields.io/badge/Flask-1.1.2-red) ![jquery](https://img.shields.io/badge/jQuery-3.5.1-yellow) ![Bootstrap](https://img.shields.io/badge/Bootstrap-4.5.2-blue)
+![Python3](https://img.shields.io/badge/Python-3-brightgreen) 
+
+![Flask](https://img.shields.io/badge/Flask-1.1.2-red) ![jquery](https://img.shields.io/badge/jQuery-3.5.1-yellow) ![Bootstrap](https://img.shields.io/badge/Bootstrap-4.5.2-blue)
 ![License](https://img.shields.io/badge/License-GPL%20v3.0-lightgrey)
 
 
@@ -10,7 +12,7 @@ This is an step-by-step guide how to deploy a Flask-App on render.com. I use the
 
 The original project is hosted on Heroku. The source for that can be found [here](https://github.com/marwonn/spotify-playlist-generator-analyzer).
 <br/><br/>
-__________
+
 ## Table of Contents
   <ul>
     <li>
@@ -29,7 +31,7 @@ __________
     <li><a href="#license">License</a></li>
   </ul>
 
-__________
+
 ## Getting Started
 ### Prerequisites
 - A [Spotify Developer Account](https://developer.spotify.com) is needed. I use the free version.

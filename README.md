@@ -1,4 +1,4 @@
-[![Contributors][contributors-shield]][contributors-url]
+[![License][https://img.shields.io/badge/License-GPL%20v3.0-lightgrey]]
 
 https://img.shields.io/badge/License-GPL%20v3.0-lightgrey
 

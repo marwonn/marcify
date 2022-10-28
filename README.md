@@ -1,6 +1,7 @@
 ![Python3](https://img.shields.io/badge/Python-3-brightgreen) 
-
-![Flask](https://img.shields.io/badge/Flask-1.1.2-red) ![jquery](https://img.shields.io/badge/jQuery-3.5.1-yellow) ![Bootstrap](https://img.shields.io/badge/Bootstrap-4.5.2-blue)
+![Flask](https://img.shields.io/badge/Flask-1.1.2-red)
+![jquery](https://img.shields.io/badge/jQuery-3.5.1-yellow)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-4.5.2-blue)
 ![License](https://img.shields.io/badge/License-GPL%20v3.0-lightgrey)
 
 

@@ -18,7 +18,7 @@ pickleshare==0.7.5
 plotly==4.14.1
 pygal==2.4.0
 prompt-toolkit==3.0.8
-Pygments==2.7.3
+Pygments==2.15.0
 python-dateutil==2.8.1
 pytz==2020.4
 pyzmq==20.0.0

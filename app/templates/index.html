@@ -1,152 +1,365 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <title>Playlist Generator</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
   <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="../static/css/site.css">
-  
+
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-  <script src="{{url_for('static', filename='js/main.js')}}"></script>
 
+  <style>
+    .playlist-item {
+      padding: 10px;
+      border: 1px solid #444;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .playlist-item:hover {
+      background-color: #2c3e50;
+    }
+    .playlist-item.selected {
+      border-color: #1db954;
+      background-color: #1a472a;
+    }
+    .playlist-img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .score-bar {
+      height: 20px;
+      background: linear-gradient(to right, #3498db, #1db954);
+      border-radius: 4px;
+    }
+    .score-bar-container {
+      background-color: #2c3e50;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .mood-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      margin: 3px;
+      background-color: #1db954;
+      border-radius: 15px;
+      font-size: 12px;
+    }
+    .step-card {
+      background-color: #1a1a2e;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .step-number {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      background-color: #1db954;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 30px;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    #mood-profile {
+      display: none;
+    }
+    #generator-settings {
+      display: none;
+    }
+  </style>
 </head>
 <body>
   <nav class="navbar navbar-dark bg-dark">
-    <a onclick="$('#loading').show();" style="color: white;" class="navbar-brand" href="{{ url_for('music_profile') }}">
+    <a style="color: white;" class="navbar-brand" href="{{ url_for('music_profile') }}">
       <small>My Profile</small>
     </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
   </nav>
 
- <div id="loading" style="display:none; text-align:center"><img src="../static/images/loading.gif" alt="Please wait..." />  Please wait...analyzing your music!</div>
+  <div id="loading" style="display:none; text-align:center; padding: 50px;">
+    <img src="../static/images/loading.gif" alt="Please wait..." />
+    <p>Analyzing your playlist...</p>
+  </div>
 
-<div class="jumbotron text-center">
-  <h1>Magic Music Generator</h1> <span class="badge badge-warning">by marcify</span>
-</div>
+  <div class="jumbotron text-center">
+    <h1>Magic Music Generator</h1>
+    <p class="lead">Create playlists based on the mood of your existing playlists</p>
+  </div>
 
-<div class="container">
+  <div class="container">
+    <!-- Step 1: Select Playlist -->
+    <div class="step-card" id="step-1">
+      <h4><span class="step-number">1</span> Select a Playlist to Analyze</h4>
+      <p class="text-muted">Choose one of your playlists as the mood template</p>
 
-  <div class="row mt-4 justify-content-center">
+      <div id="playlists-loading" class="text-center">
+        <p>Loading your playlists...</p>
+      </div>
 
-    <div class="col-md-5">
-        <h3 style="text-align:center;">Playlist Settings</h3>
-        <hr/>
-        <form>
+      <div id="playlists-container" style="max-height: 300px; overflow-y: auto;">
+        <!-- Playlists will be loaded here -->
+      </div>
 
-          <div class="form-group form-control-lg">
-            <label for="seed-genre">Fallback Genre <small class="text-muted">(used if artist not found)</small></label>
-            <select class="form-control form-control-lg" id="seed-genre" name="seed-genre">
-              <option value="rock">Rock</option>
-              <option value="alternative">Alternative</option>
-              <option value="pop">Pop</option>
-              <option value="indie">Indie</option>
-              <option value="electronic">Electronic</option>
-              <option value="hip-hop">Hip-Hop</option>
-              <option value="r&b">R&B</option>
-              <option value="jazz">Jazz</option>
-              <option value="classical">Classical</option>
-              <option value="metal">Metal</option>
-              <option value="punk">Punk</option>
-              <option value="country">Country</option>
-              <option value="folk">Folk</option>
-              <option value="blues">Blues</option>
-              <option value="soul">Soul</option>
-            </select>
+      <button id="analyze-playlist-btn" class="btn btn-primary btn-block mt-3" disabled>
+        Analyze Selected Playlist
+      </button>
+    </div>
+
+    <!-- Step 2: Mood Profile -->
+    <div class="step-card" id="mood-profile">
+      <h4><span class="step-number">2</span> Playlist Mood Profile</h4>
+      <p class="text-muted">Based on <span id="analyzed-playlist-name"></span></p>
+
+      <div class="row">
+        <div class="col-md-6">
+          <h5>Mood Scores</h5>
+          <div id="mood-scores"></div>
+        </div>
+        <div class="col-md-6">
+          <h5>Top Tags</h5>
+          <div id="mood-tags"></div>
+        </div>
+      </div>
+
+      <button id="continue-to-generator" class="btn btn-success btn-block mt-3">
+        Continue to Generator
+      </button>
+    </div>
+
+    <!-- Step 3: Generator Settings -->
+    <div class="step-card" id="generator-settings">
+      <h4><span class="step-number">3</span> Generate New Playlist</h4>
+      <p class="text-muted">Combine the mood profile with your preferences</p>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="seed-artist">Seed Artist <small class="text-muted">(adds similar artists)</small></label>
+            <input type="text" id="seed-artist" class="form-control" placeholder="e.g. Radiohead, Daft Punk...">
           </div>
 
-          <br>
-          <br>
+          <div class="form-group">
+            <label for="variety">Variety <small class="text-muted">(explore more artists)</small></label>
+            <input type="range" min="1" max="10" step="1" class="form-control-range" id="variety" value="5">
+          </div>
 
-            <div class="form-group form-control-lg">
-              <label for="variety">Variety <small class="text-muted">(explore more artists)</small></label>
-              <input type="range" min="1" max="10" step="1" class="form-control-range" id="variety" value="5" name="variety">
-            </div>
+          <div class="form-group">
+            <label for="discovery">Discovery <small class="text-muted">(mood profile vs. seed artist)</small></label>
+            <input type="range" min="1" max="10" step="1" class="form-control-range" id="discovery" value="5">
+            <small class="text-muted">1 = mostly mood profile, 10 = mostly seed artist</small>
+          </div>
 
-            <div class="form-group form-control-lg">
-                <label for="discovery">Discovery <small class="text-muted">(find new artists vs. seed artist)</small></label>
-                <input type="range" min="1" max="10" step="1" class="form-control-range" id="discovery" value="5" name="discovery">
-            </div>
+          <div class="form-group">
+            <label for="track-count">Number of Tracks</label>
+            <input type="number" class="form-control" id="track-count" value="15" min="5" max="30">
+          </div>
 
-            <br>
-
-            <div class="form-group form-control-lg">
-                <label for="track-count">Track Count</label>
-                <input type="number" class="form-control form-control-lg" max="20" min="1" value="10" name="track-count" id="track-count" required>
-            </div>
-
-            <br>
-            <br>
-
-            
-            <div class="form-group form-control-lg" >
-              <label for="seed-artist">Seed Artist <small class="text-muted">(finds similar artists)</small></label>
-              <input style="font-size:15px;" type="text" id="seed-artist" class="form-control form-control-lg" name="seed-artist" placeholder="e.g. Radiohead, Kendrick Lamar, Daft Punk...">
-            </div>
-
-            <br>
-            <br>
-            <br>
-
-            <button type="button" id="generate-spotify-recs" class="btn btn-block btn-success btn-lg">Generate playlist</button>
-
-          </form>
-          <br>
-    </div>
-
-    <script type="text/javascript">
-      document.addEventListener("DOMContentLoaded", () => {
-
-        const toggleRecommendation = document.querySelector(".toggle-reco")
-        if (toggleRecommendation.classList.contains("toggle-reco")){
-          toggleRecommendation.style.display="none"
-        }
-
-        const buttonSpotifyRecs = document.querySelector("#generate-spotify-recs")
-
-        buttonSpotifyRecs.addEventListener("click", () => {
-          if (toggleRecommendation.classList.contains("toggle-reco")){
-            toggleRecommendation.style.display="block"
-          }
-        })
-      })
-    </script>
-
-    <div class="col-md-5 border-left toggle-reco" id="recommendations-col">
-        <h3 style="text-align:center;">Recommendations</h3>
-        <hr/>
-        <div id="song-container">
-
-        </div>
-
-        <button type="button" id="create-my-playlist" class="btn btn-block btn-success btn-lg" style="display:none;">Save Playlist to Spotify</button>
-    </div>
-</div>
-
-<br>
-
-  <!-- Modal -->
-  <div class="modal fade modal-dialog modal-dialog-centered" id="saveModal" tabindex="-1" role="dialog" aria-hidden="true" data-focus="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header" style="background-color: green;>
-          <h5 class="modal-title" id="saveModalLabel" style="color: black"><strong>Saved!</strong></h5>
-          <button type="button" class="close" style="color: white" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
+          <button id="generate-playlist-btn" class="btn btn-success btn-block btn-lg">
+            Generate Playlist
           </button>
         </div>
-        <div class="modal-body">
-         <span style="color: black">Recommendations were successfully sent to your Spotify account. You can find them in your playlist section.</span>
+
+        <div class="col-md-6">
+          <h5>Generated Playlist</h5>
+          <div id="generated-songs" style="max-height: 400px; overflow-y: auto;">
+            <p class="text-muted">Click "Generate Playlist" to see recommendations</p>
+          </div>
+
+          <button id="save-playlist-btn" class="btn btn-primary btn-block mt-3" style="display: none;">
+            Save to Spotify
+          </button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Success Modal -->
+  <div class="modal fade" id="saveModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header" style="background-color: #1db954;">
+          <h5 class="modal-title" style="color: white"><strong>Saved!</strong></h5>
+          <button type="button" class="close" style="color: white" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <span style="color: black">Your new playlist was saved to Spotify!</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var selectedPlaylistId = null;
+    var selectedPlaylistName = null;
+    var generatedUris = [];
+
+    // Load playlists on page load
+    $(document).ready(function() {
+      loadPlaylists();
+    });
+
+    function loadPlaylists() {
+      $.get('/api/playlists', function(response) {
+        $('#playlists-loading').hide();
+
+        if (response.playlists && response.playlists.length > 0) {
+          var html = '';
+          response.playlists.forEach(function(pl) {
+            var img = pl.image || 'https://via.placeholder.com/50?text=♪';
+            html += '<div class="playlist-item d-flex align-items-center" data-id="' + pl.id + '" data-name="' + pl.name + '">';
+            html += '<img src="' + img + '" class="playlist-img mr-3">';
+            html += '<div>';
+            html += '<strong>' + pl.name + '</strong><br>';
+            html += '<small class="text-muted">' + pl.tracks_total + ' tracks</small>';
+            html += '</div></div>';
+          });
+          $('#playlists-container').html(html);
+        } else {
+          $('#playlists-container').html('<p class="text-muted">No playlists found</p>');
+        }
+      }).fail(function() {
+        $('#playlists-loading').hide();
+        $('#playlists-container').html('<p class="text-danger">Error loading playlists</p>');
+      });
+    }
+
+    // Select playlist
+    $(document).on('click', '.playlist-item', function() {
+      $('.playlist-item').removeClass('selected');
+      $(this).addClass('selected');
+      selectedPlaylistId = $(this).data('id');
+      selectedPlaylistName = $(this).data('name');
+      $('#analyze-playlist-btn').prop('disabled', false);
+    });
+
+    // Analyze playlist
+    $('#analyze-playlist-btn').click(function() {
+      if (!selectedPlaylistId) return;
+
+      $(this).prop('disabled', true).text('Analyzing...');
+      $('#loading').show();
+
+      $.get('/api/playlist/' + selectedPlaylistId + '/analyze', function(response) {
+        $('#loading').hide();
+        $('#analyze-playlist-btn').prop('disabled', false).text('Analyze Selected Playlist');
+
+        // Show mood profile
+        $('#analyzed-playlist-name').text(selectedPlaylistName);
+
+        // Render scores
+        var scoresHtml = '';
+        for (var category in response.scores) {
+          var score = response.scores[category];
+          var percent = Math.round(score * 100);
+          scoresHtml += '<div class="mb-2">';
+          scoresHtml += '<div class="d-flex justify-content-between"><span>' + category.charAt(0).toUpperCase() + category.slice(1) + '</span><span>' + percent + '%</span></div>';
+          scoresHtml += '<div class="score-bar-container"><div class="score-bar" style="width: ' + percent + '%;"></div></div>';
+          scoresHtml += '</div>';
+        }
+        $('#mood-scores').html(scoresHtml);
+
+        // Render tags
+        var tagsHtml = '';
+        response.top_tags.slice(0, 10).forEach(function(tag) {
+          tagsHtml += '<span class="mood-tag">' + tag[0] + '</span>';
+        });
+        $('#mood-tags').html(tagsHtml);
+
+        $('#mood-profile').slideDown();
+      }).fail(function() {
+        $('#loading').hide();
+        $('#analyze-playlist-btn').prop('disabled', false).text('Analyze Selected Playlist');
+        alert('Error analyzing playlist. Please try again.');
+      });
+    });
+
+    // Continue to generator
+    $('#continue-to-generator').click(function() {
+      $('#generator-settings').slideDown();
+      $('html, body').animate({
+        scrollTop: $('#generator-settings').offset().top - 20
+      }, 500);
+    });
+
+    // Generate playlist
+    $('#generate-playlist-btn').click(function() {
+      $(this).prop('disabled', true).text('Generating...');
+
+      var payload = {
+        'playlist_id': selectedPlaylistId,
+        'seed_artist': $('#seed-artist').val(),
+        'variety': $('#variety').val(),
+        'discovery': $('#discovery').val(),
+        'track_count': $('#track-count').val()
+      };
+
+      $.ajax({
+        type: 'POST',
+        url: '/generate-from-playlist',
+        contentType: 'application/json',
+        data: JSON.stringify(payload),
+        success: function(response) {
+          generatedUris = JSON.parse(response.uris);
+
+          var songsHtml = '';
+          response.songs.forEach(function(song) {
+            var artists = song.artists.map(function(a) { return a.name; }).join(', ');
+            var albumImg = song.album && song.album.images && song.album.images[2]
+              ? song.album.images[2].url : '';
+
+            songsHtml += '<div class="d-flex align-items-center mb-2 p-2" style="border-bottom: 1px solid #333;">';
+            if (albumImg) {
+              songsHtml += '<img src="' + albumImg + '" style="width:40px;height:40px;margin-right:10px;border-radius:4px;">';
+            }
+            songsHtml += '<div><strong>' + song.name + '</strong><br><small class="text-muted">' + artists + '</small></div>';
+            songsHtml += '</div>';
+          });
+
+          $('#generated-songs').html(songsHtml);
+          $('#save-playlist-btn').show();
+          $('#generate-playlist-btn').prop('disabled', false).text('Generate Playlist');
+        },
+        error: function() {
+          alert('Error generating playlist. Please try again.');
+          $('#generate-playlist-btn').prop('disabled', false).text('Generate Playlist');
+        }
+      });
+    });
+
+    // Save playlist
+    $('#save-playlist-btn').click(function() {
+      if (generatedUris.length === 0) return;
+
+      $(this).prop('disabled', true).text('Saving...');
+
+      $.ajax({
+        type: 'POST',
+        url: '/save-private-playlist',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          'uris': generatedUris,
+          'name': 'Generated from ' + selectedPlaylistName
+        }),
+        success: function() {
+          $('#saveModal').modal('show');
+          $('#save-playlist-btn').prop('disabled', false).text('Save to Spotify');
+        },
+        error: function() {
+          alert('Error saving playlist. Please try again.');
+          $('#save-playlist-btn').prop('disabled', false).text('Save to Spotify');
+        }
+      });
+    });
+  </script>
 </body>
 </html>

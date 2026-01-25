@@ -1,14 +1,13 @@
 var uris = "[]";
 
 $(document).on("click","#generate-spotify-recs", function(){
-    //construct payload using form data then send to server 
+    //construct payload using form data then send to server
     let payload = {};
-    payload['danceability'] = $('#danceability').val();
-    payload['valence'] = $('#valence').val()
-    payload['energy'] = $('#energy').val()
-    payload['track-count'] = $('#track-count').val()
-    payload['seed-genre'] = $('#seed-genre').val()
-    payload['seed-artist'] = $('#seed-artist').val()
+    payload['variety'] = $('#variety').val();
+    payload['discovery'] = $('#discovery').val();
+    payload['track-count'] = $('#track-count').val();
+    payload['seed-genre'] = $('#seed-genre').val();
+    payload['seed-artist'] = $('#seed-artist').val();
 
     $.ajax({
         type: "POST",

@@ -39,14 +39,23 @@
         <form>
 
           <div class="form-group form-control-lg">
-            <label for="seed-genre">Seed Genre</label>
+            <label for="seed-genre">Fallback Genre <small class="text-muted">(used if artist not found)</small></label>
             <select class="form-control form-control-lg" id="seed-genre" name="seed-genre">
               <option value="rock">Rock</option>
               <option value="alternative">Alternative</option>
               <option value="pop">Pop</option>
-              <option value="country">Country</option>
+              <option value="indie">Indie</option>
+              <option value="electronic">Electronic</option>
               <option value="hip-hop">Hip-Hop</option>
-              <option value="hardcore">Hardcore</option>
+              <option value="r&b">R&B</option>
+              <option value="jazz">Jazz</option>
+              <option value="classical">Classical</option>
+              <option value="metal">Metal</option>
+              <option value="punk">Punk</option>
+              <option value="country">Country</option>
+              <option value="folk">Folk</option>
+              <option value="blues">Blues</option>
+              <option value="soul">Soul</option>
             </select>
           </div>
 
@@ -54,18 +63,13 @@
           <br>
 
             <div class="form-group form-control-lg">
-              <label for="danceability">Danceability</label>
-              <input type="range" min="1" max="10" step="1" class="form-control-range" id="danceability" value="3" name="danceability">
+              <label for="variety">Variety <small class="text-muted">(explore more artists)</small></label>
+              <input type="range" min="1" max="10" step="1" class="form-control-range" id="variety" value="5" name="variety">
             </div>
 
             <div class="form-group form-control-lg">
-                <label for="valence">Mood</label>
-                <input type="range" min="1" max="10" step="1" class="form-control-range" id="valence" value="5" name="valence">
-            </div>
-
-            <div class="form-group form-control-lg">
-                <label for="energy">Energy</label>
-                <input type="range" min="1" max="10" step="1" class="form-control-range" id="energy" value="2" name="energy">
+                <label for="discovery">Discovery <small class="text-muted">(find new artists vs. seed artist)</small></label>
+                <input type="range" min="1" max="10" step="1" class="form-control-range" id="discovery" value="5" name="discovery">
             </div>
 
             <br>
@@ -80,8 +84,8 @@
 
             
             <div class="form-group form-control-lg" >
-              <label for="seed-artist">Seed Artist (optional)</label>
-              <input style="font-size:15px;" type="text" id="seed-artist" class="form-control form-control-lg" name="seed-artist" placeholder="Default is Rage Against The Machine">
+              <label for="seed-artist">Seed Artist <small class="text-muted">(finds similar artists)</small></label>
+              <input style="font-size:15px;" type="text" id="seed-artist" class="form-control form-control-lg" name="seed-artist" placeholder="e.g. Radiohead, Kendrick Lamar, Daft Punk...">
             </div>
 
             <br>

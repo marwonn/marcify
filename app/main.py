@@ -3,8 +3,8 @@ import pandas as pd
 import requests 
 import spotipy
 
-from flask import Flask, render_template, redirect, url_for, jsonify , session, request
-from app.helper import figures, recommendations, create_playlist, get_seed_artist, audio_features
+from flask import Flask, render_template, redirect, url_for, jsonify, session, request
+from app.helper import figures, recommendations, create_playlist, audio_features
 from datetime import datetime 
 from app.config import Config
 
@@ -31,10 +31,10 @@ def index():
     
     sess_access_token, sess_refresh_token, sess_token_create_time = session.get("access_token", None) , session.get('refresh_token', None), session.get('token_create', None)
     if (datetime.utcnow() - sess_token_create_time).total_seconds() > 3500:
-        ref_url = "https://accounts.spotify.com/api/token"
+        token_url = "https://accounts.spotify.com/api/token"
         headers = {"Content-Type":"application/x-www-form-urlencoded"}
         payload = {"grant_type":"refresh_token","refresh_token":sess_refresh_token}
-        resp = requests.post(url, headers=headers, data=payload, auth=requests.auth.HTTPBasicAuth(app.config['SPOTIFY_CLIENT_ID'], app.config['SPOTIFY_CLIENT_SECRET']))
+        resp = requests.post(token_url, headers=headers, data=payload, auth=requests.auth.HTTPBasicAuth(app.config['SPOTIFY_CLIENT_ID'], app.config['SPOTIFY_CLIENT_SECRET']))
         
         if 200 <= resp.status_code <= 299:
             parsed_resp = resp.json()
@@ -57,14 +57,11 @@ def get_rec_playlist():
     if (datetime.utcnow() - sess_token_create_time).total_seconds() > 3500:
         return "error, expired token", 400
 
-    #get json data from request 
+    #get json data from request
     data = request.get_json()
 
-    #func to get seed data 
-    seed = get_seed_artist.get_seed_artist(data, sess_access_token)
-
-    #fetch recommended tracks and return to user 
-    tracks = recommendations.gen_recommendations(data, sess_access_token, seed)
+    #fetch recommended tracks using Last.fm + Spotify search
+    tracks = recommendations.gen_recommendations(data, sess_access_token, None)
     uris = [i['uri'] for i in tracks] 
     resp_dict = {
         "songs":tracks,

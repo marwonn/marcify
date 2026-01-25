@@ -2,7 +2,7 @@ import os
 
 class Config:
     """
-    user credentials configuration 
+    user credentials configuration
     """
     USERNAME = os.getenv("USERNAME")
     SECRET_KEY = os.getenv("SECRET_KEY")
@@ -12,4 +12,7 @@ class Config:
     SCOPE = "playlist-modify-private%20playlist-read-private%20user-top-read"
 
     REDIRECT_URL = os.getenv("REDIRECT_URL")
+
+    # Last.fm API for recommendations (free alternative to deprecated Spotify recommendations)
+    LASTFM_API_KEY = os.getenv("LASTFM_API_KEY")
     

@@ -164,3 +164,176 @@ input[type=range]::-webkit-slider-thumb {
 .modal-backdrop.show {
   opacity: 0.5;
 }
+
+/* ==================== MOBILE OPTIMIZATIONS ==================== */
+
+/* Touch-friendly minimum sizes */
+.btn {
+  min-height: 44px;
+  padding: 12px 20px;
+}
+
+.btn-lg {
+  min-height: 54px;
+  padding: 14px 24px;
+  font-size: 1.1rem;
+}
+
+/* Better touch targets for form controls */
+.form-control {
+  min-height: 44px;
+  font-size: 16px; /* Prevents iOS zoom on focus */
+}
+
+/* Improved range sliders for touch */
+input[type=range] {
+  height: 44px;
+  padding: 10px 0;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  height: 28px;
+  width: 28px;
+  border-radius: 50%;
+  margin-top: -10px;
+}
+
+input[type=range]::-moz-range-thumb {
+  height: 28px;
+  width: 28px;
+  border-radius: 50%;
+}
+
+input[type=range]::-ms-thumb {
+  height: 28px;
+  width: 28px;
+  border-radius: 50%;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  /* Reduce padding on mobile */
+  .jumbotron {
+    padding: 1.5rem 1rem;
+  }
+
+  .jumbotron h1 {
+    font-size: 1.75rem;
+  }
+
+  .jumbotron .lead {
+    font-size: 1rem;
+  }
+
+  .container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* Stack columns on mobile */
+  .row > [class*="col-md-"] {
+    margin-bottom: 1rem;
+  }
+
+  /* Cards with better mobile spacing */
+  .card {
+    margin-bottom: 1rem;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .card-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .card-header h4 {
+    font-size: 1.1rem;
+    margin-bottom: 0;
+  }
+
+  /* Better navbar for mobile */
+  .navbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .navbar-brand {
+    font-size: 0.9rem;
+  }
+
+  /* Full-width buttons on mobile */
+  .btn-block {
+    width: 100%;
+  }
+
+  /* Modal adjustments */
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  .modal-content {
+    border-radius: 12px;
+  }
+
+  /* Form groups with better spacing */
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+
+  .form-group label {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Larger range slider track on mobile */
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 12px;
+  }
+
+  input[type=range]::-moz-range-track {
+    height: 12px;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 576px) {
+  .jumbotron h1 {
+    font-size: 1.5rem;
+  }
+
+  .jumbotron .lead {
+    font-size: 0.9rem;
+  }
+
+  /* Even more compact on very small screens */
+  .container {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  /* Time range buttons stack or wrap nicely */
+  .time-range-btn {
+    display: block;
+    width: 100%;
+    margin: 5px 0;
+  }
+}
+
+/* Prevent horizontal scroll */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Safe area support for notched phones */
+@supports (padding: max(0px)) {
+  .container {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  .navbar {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}

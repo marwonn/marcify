@@ -1,57 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <title>Playlist Generator</title>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
   <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-
   <link rel="stylesheet" type="text/css" href="../static/css/site.css" />
-  
+
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
   <script src="{{url_for('static', filename='js/main.js')}}"></script>
 
+  <style>
+    .landing-content {
+      min-height: calc(100vh - 200px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .steps-list {
+      padding-left: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .steps-list li {
+      margin-bottom: 0.75rem;
+      font-size: 1.1rem;
+    }
+    .cta-button {
+      padding: 16px 32px;
+      font-size: 1.2rem;
+      border-radius: 30px;
+    }
+    @media (max-width: 768px) {
+      .landing-content {
+        min-height: auto;
+        padding: 2rem 0;
+      }
+      .landing-content h2 {
+        font-size: 1.5rem;
+        text-align: center;
+      }
+      .steps-list {
+        font-size: 1rem;
+      }
+      .steps-list li {
+        font-size: 1rem;
+      }
+      .cta-button {
+        width: 100%;
+        padding: 18px 24px;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="jumbotron text-center">
-    <h1>Magic Music Generator</h1> <span class="badge badge-warning">by marcify</span>
+    <h1>Magic Music Generator</h1>
+    <span class="badge badge-warning">by marcify</span>
   </div>
-    
-  <div class="container">    
-    <div class="row mt-4 justify-content-center">
-      <div class="col-md-5"> 
-        <h2>Looking for new music which you definitely like?</h2>
-        <br>
-        <br>
-        <div>
-          <p>Here is what you need to do:</p>
-        </div>
-          <ol>
-            <li>Click on the button.</li>
-            <li>Log in to Spotify.</li>
-            <li>Create a new playlist and have fun.</li>
-          <ol>
-          </div>
-        </div>
-      </div>
-      
+
   <div class="container">
-    <div class="row mt-4 justify-content-center">
-      <div class="col-md-5">
-        <br>
-        <br>
-        <br>
-        <form action="{{ url_for('index') }}" method="GET">
-          <button type="submit" class="btn btn-block btn-success btn-lg" id="typewriter">Go Generator Go</button>
-        </form>
+    <div class="landing-content">
+      <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+          <h2 class="mb-4">Looking for new music you'll love?</h2>
+
+          <p class="mb-3">Here's what you need to do:</p>
+          <ol class="steps-list">
+            <li>Click on the button below</li>
+            <li>Log in to Spotify</li>
+            <li>Create a new playlist and enjoy!</li>
+          </ol>
+
+          <form action="{{ url_for('index') }}" method="GET" class="text-center">
+            <button type="submit" class="btn btn-success btn-lg cta-button" id="typewriter">
+              Go Generator Go
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   </div>
-
-
 </body>
 </html>

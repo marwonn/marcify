@@ -14,42 +14,96 @@
 
   <style>
     .score-bar {
-      height: 25px;
+      height: 28px;
       background: linear-gradient(to right, #3498db, #2ecc71);
-      border-radius: 5px;
+      border-radius: 6px;
       transition: width 0.5s ease;
     }
     .score-bar-container {
       background-color: #2c3e50;
-      border-radius: 5px;
+      border-radius: 6px;
       overflow: hidden;
+    }
+    .score-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+    .score-percent {
+      background: rgba(29, 185, 84, 0.3);
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.85rem;
     }
     .tag-badge {
       display: inline-block;
-      padding: 8px 15px;
+      padding: 10px 16px;
       margin: 5px;
       background-color: #1db954;
       color: white;
-      border-radius: 20px;
+      border-radius: 22px;
       font-size: 14px;
+      -webkit-tap-highlight-color: transparent;
     }
     .tag-badge.genre {
       background-color: #e74c3c;
     }
     .track-item {
-      padding: 10px;
+      padding: 14px 10px;
       border-bottom: 1px solid #34495e;
+      min-height: 60px;
+    }
+    .track-item strong {
+      display: block;
+      margin-bottom: 4px;
     }
     .track-tags {
-      font-size: 12px;
+      font-size: 13px;
       color: #95a5a6;
+      line-height: 1.4;
     }
     .time-range-btn {
       margin: 5px;
+      min-height: 44px;
+      padding: 10px 16px;
     }
     .time-range-btn.active {
       background-color: #1db954;
       border-color: #1db954;
+    }
+    .time-range-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    /* Mobile specific */
+    @media (max-width: 768px) {
+      .time-range-container {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .time-range-btn {
+        margin: 4px 0;
+        width: 100%;
+      }
+      .card {
+        margin-bottom: 1rem;
+      }
+      .tag-badge {
+        padding: 8px 14px;
+        font-size: 13px;
+        margin: 4px;
+      }
+      .track-item {
+        padding: 12px 8px;
+      }
+      .track-item strong {
+        font-size: 0.95rem;
+      }
     }
   </style>
 </head>
@@ -67,26 +121,28 @@
   <div class="container">
     <!-- Time Range Selection -->
     <div class="row justify-content-center mb-4">
-      <div class="col-md-8 text-center">
-        <h5>Time Period</h5>
-        <a href="{{ url_for('music_profile', time_range='short_term') }}"
-           class="btn btn-outline-light time-range-btn {{ 'active' if time_range == 'short_term' else '' }}">
-          Last 4 Weeks
-        </a>
-        <a href="{{ url_for('music_profile', time_range='medium_term') }}"
-           class="btn btn-outline-light time-range-btn {{ 'active' if time_range == 'medium_term' else '' }}">
-          Last 6 Months
-        </a>
-        <a href="{{ url_for('music_profile', time_range='long_term') }}"
-           class="btn btn-outline-light time-range-btn {{ 'active' if time_range == 'long_term' else '' }}">
-          All Time
-        </a>
+      <div class="col-12 col-md-8">
+        <h5 class="text-center mb-3">Time Period</h5>
+        <div class="time-range-container">
+          <a href="{{ url_for('music_profile', time_range='short_term') }}"
+             class="btn btn-outline-light time-range-btn {{ 'active' if time_range == 'short_term' else '' }}">
+            Last 4 Weeks
+          </a>
+          <a href="{{ url_for('music_profile', time_range='medium_term') }}"
+             class="btn btn-outline-light time-range-btn {{ 'active' if time_range == 'medium_term' else '' }}">
+            Last 6 Months
+          </a>
+          <a href="{{ url_for('music_profile', time_range='long_term') }}"
+             class="btn btn-outline-light time-range-btn {{ 'active' if time_range == 'long_term' else '' }}">
+            All Time
+          </a>
+        </div>
       </div>
     </div>
 
     <div class="row mt-4">
       <!-- Audio Profile Scores -->
-      <div class="col-md-6">
+      <div class="col-12 col-md-6">
         <div class="card bg-dark text-white">
           <div class="card-header">
             <h4>Your Audio Profile</h4>
@@ -94,9 +150,9 @@
           <div class="card-body">
             {% for category, score in profile.scores.items() %}
             <div class="mb-3">
-              <div class="d-flex justify-content-between">
+              <div class="score-label">
                 <span>{{ category | capitalize }}</span>
-                <span>{{ (score * 100) | int }}%</span>
+                <span class="score-percent">{{ (score * 100) | int }}%</span>
               </div>
               <div class="score-bar-container">
                 <div class="score-bar" style="width: {{ score * 100 }}%;"></div>
@@ -107,7 +163,7 @@
         </div>
 
         <!-- Top Genres -->
-        <div class="card bg-dark text-white mt-4">
+        <div class="card bg-dark text-white mt-3">
           <div class="card-header">
             <h4>Your Top Genres</h4>
           </div>
@@ -124,7 +180,7 @@
       </div>
 
       <!-- Top Tags -->
-      <div class="col-md-6">
+      <div class="col-12 col-md-6">
         <div class="card bg-dark text-white">
           <div class="card-header">
             <h4>Your Music Tags</h4>
@@ -139,15 +195,15 @@
         </div>
 
         <!-- Generate from Profile -->
-        <div class="card bg-dark text-white mt-4">
+        <div class="card bg-dark text-white mt-3">
           <div class="card-header">
-            <h4>Generate Playlist from Profile</h4>
+            <h4>Generate Playlist</h4>
           </div>
           <div class="card-body">
-            <p>Create a new playlist that matches your taste profile.</p>
+            <p class="mb-3">Create a playlist that matches your taste profile.</p>
             <div class="form-group">
-              <label for="profile-track-count">Number of Tracks</label>
-              <input type="number" class="form-control" id="profile-track-count" value="15" min="5" max="30">
+              <label for="profile-track-count" class="mb-2">Number of Tracks</label>
+              <input type="number" class="form-control" id="profile-track-count" value="15" min="5" max="30" inputmode="numeric">
             </div>
             <button id="generate-from-profile" class="btn btn-success btn-block btn-lg">
               Generate Playlist
@@ -163,12 +219,12 @@
         <div class="card bg-dark text-white">
           <div class="card-header">
             <h4>Generated Playlist</h4>
-            <small class="text-muted">Based on your profile tags: <span id="used-tags"></span></small>
+            <small class="text-muted d-block mt-1">Based on: <span id="used-tags"></span></small>
           </div>
           <div class="card-body">
-            <div id="playlist-songs"></div>
+            <div id="playlist-songs" style="max-height: 50vh; overflow-y: auto; -webkit-overflow-scrolling: touch;"></div>
             <button id="save-profile-playlist" class="btn btn-success btn-block btn-lg mt-3" style="display: none;">
-              Save Playlist to Spotify
+              Save to Spotify
             </button>
           </div>
         </div>
@@ -180,15 +236,16 @@
       <div class="col-12">
         <div class="card bg-dark text-white">
           <div class="card-header">
-            <h4>Your Top Tracks Analysis</h4>
+            <h4>Your Top Tracks</h4>
           </div>
-          <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+          <div class="card-body" style="max-height: 50vh; overflow-y: auto; -webkit-overflow-scrolling: touch;">
             {% for track in profile.track_analyses[:20] %}
             <div class="track-item">
-              <strong>{{ track.name }}</strong> - {{ track.artist }}
+              <strong>{{ track.name }}</strong>
+              <span class="text-muted"> - {{ track.artist }}</span>
               <div class="track-tags">
                 {% if track.tags %}
-                  Tags: {{ track.tags | join(', ') }}
+                  {{ track.tags | join(', ') }}
                 {% else %}
                   <em>No tags found</em>
                 {% endif %}

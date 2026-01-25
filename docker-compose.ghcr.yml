@@ -1,5 +1,10 @@
-# Use pre-built image from GitHub Container Registry
-# Usage: docker compose -f docker-compose.ghcr.yml up -d
+# Marcify - Spotify Playlist Generator
+#
+# Quick Start:
+# 1. Download this file: curl -O https://raw.githubusercontent.com/marwonn/marcify/master/docker-compose.ghcr.yml
+# 2. Fill in your API credentials below
+# 3. Run: docker compose -f docker-compose.ghcr.yml up -d
+# 4. Open: http://localhost:5000
 
 services:
   marcify:
@@ -8,10 +13,19 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
-      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
-      - REDIRECT_URL=${REDIRECT_URL}
-      - SECRET_KEY=${SECRET_KEY}
-      - LASTFM_API_KEY=${LASTFM_API_KEY}
-      - USERNAME=${USERNAME}
+      # Spotify API (https://developer.spotify.com/dashboard)
+      - SPOTIFY_CLIENT_ID=your_spotify_client_id
+      - SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+
+      # Must match redirect URI in Spotify app settings
+      - REDIRECT_URL=http://localhost:5000/spotify-oauth2callback
+
+      # Random string for session encryption
+      - SECRET_KEY=change_this_to_a_random_string
+
+      # Last.fm API (https://www.last.fm/api/account/create)
+      - LASTFM_API_KEY=your_lastfm_api_key
+
+      # Your Spotify username
+      - USERNAME=your_spotify_username
     restart: unless-stopped

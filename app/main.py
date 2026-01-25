@@ -245,3 +245,134 @@ def generate_from_profile():
 def playlist_analyzer():
     """Redirect old analyzer route to new profile page."""
     return redirect(url_for('music_profile'))
+
+
+@app.route('/api/playlists', methods=['GET'])
+def get_user_playlists():
+    """
+    Get all playlists of the current user.
+    """
+    sess_access_token = session.get("access_token")
+    sess_token_create_time = session.get('token_create')
+
+    if not sess_access_token or not sess_token_create_time:
+        return jsonify({"error": "Not authenticated"}), 403
+
+    if (time.time() - sess_token_create_time) > 3500:
+        return jsonify({"error": "Token expired"}), 400
+
+    playlists = lastfm_profile.get_user_playlists(sess_access_token, limit=50)
+
+    # Return simplified playlist data
+    playlist_data = []
+    for pl in playlists:
+        playlist_data.append({
+            'id': pl.get('id'),
+            'name': pl.get('name'),
+            'tracks_total': pl.get('tracks', {}).get('total', 0),
+            'image': pl.get('images', [{}])[0].get('url') if pl.get('images') else None
+        })
+
+    return jsonify({"playlists": playlist_data})
+
+
+@app.route('/api/playlist/<playlist_id>/analyze', methods=['GET'])
+def analyze_playlist(playlist_id):
+    """
+    Analyze a specific playlist and return its mood profile.
+    """
+    sess_access_token = session.get("access_token")
+    sess_token_create_time = session.get('token_create')
+
+    if not sess_access_token or not sess_token_create_time:
+        return jsonify({"error": "Not authenticated"}), 403
+
+    if (time.time() - sess_token_create_time) > 3500:
+        return jsonify({"error": "Token expired"}), 400
+
+    # Get tracks from playlist
+    tracks = lastfm_profile.get_playlist_tracks(sess_access_token, playlist_id, limit=30)
+
+    if not tracks:
+        return jsonify({"error": "Could not fetch playlist tracks"}), 400
+
+    # Analyze tracks
+    profile = lastfm_profile.analyze_tracks_profile(tracks)
+
+    # Store in session for later use
+    session['playlist_profile'] = {
+        'playlist_id': playlist_id,
+        'scores': profile['scores'],
+        'top_tags': profile['top_tags'][:10],
+        'genres': profile['genres']
+    }
+
+    return jsonify({
+        'scores': profile['scores'],
+        'top_tags': profile['top_tags'][:15],
+        'genres': profile['genres'],
+        'track_count': profile['track_count']
+    })
+
+
+@app.route('/generate-from-playlist', methods=['POST'])
+def generate_from_playlist():
+    """
+    Generate a new playlist based on:
+    - Mood profile from selected playlist
+    - Seed artist
+    - Variety and Discovery settings
+    """
+    sess_access_token = session.get("access_token")
+    sess_token_create_time = session.get('token_create')
+
+    if not sess_access_token or not sess_token_create_time:
+        return jsonify({"error": "Not authenticated"}), 403
+
+    if (time.time() - sess_token_create_time) > 3500:
+        return jsonify({"error": "Token expired"}), 400
+
+    data = request.get_json()
+    playlist_id = data.get('playlist_id')
+    seed_artist = data.get('seed_artist', '').strip()
+    variety = int(data.get('variety', 5))
+    discovery = int(data.get('discovery', 5))
+    track_count = int(data.get('track_count', 15))
+
+    # Get or create profile from playlist
+    playlist_profile = session.get('playlist_profile')
+
+    # If no profile or different playlist, analyze it
+    if not playlist_profile or playlist_profile.get('playlist_id') != playlist_id:
+        if playlist_id:
+            tracks = lastfm_profile.get_playlist_tracks(sess_access_token, playlist_id, limit=30)
+            if tracks:
+                profile = lastfm_profile.analyze_tracks_profile(tracks)
+                playlist_profile = {
+                    'playlist_id': playlist_id,
+                    'scores': profile['scores'],
+                    'top_tags': profile['top_tags'][:10],
+                    'genres': profile['genres']
+                }
+                session['playlist_profile'] = playlist_profile
+
+    if not playlist_profile:
+        return jsonify({"error": "No playlist profile available"}), 400
+
+    # Generate tracks
+    tracks = lastfm_profile.generate_playlist_from_profile_and_artist(
+        playlist_profile,
+        seed_artist,
+        sess_access_token,
+        variety=variety,
+        discovery=discovery,
+        limit=track_count
+    )
+
+    uris = [t['uri'] for t in tracks if t]
+    return jsonify({
+        "songs": tracks,
+        "uris": json.dumps(uris),
+        "profile_tags": playlist_profile['top_tags'][:5],
+        "seed_artist": seed_artist
+    })

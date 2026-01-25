@@ -243,3 +243,119 @@ def get_artists_by_tag(tag, limit=10):
         pass
 
     return []
+
+
+def get_user_playlists(token, limit=50):
+    """
+    Get all playlists of the current user from Spotify.
+    """
+    url = "https://api.spotify.com/v1/me/playlists"
+    params = {"limit": limit}
+    headers = {"Authorization": f"Bearer {token}"}
+
+    try:
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get("items", [])
+    except Exception:
+        pass
+
+    return []
+
+
+def get_playlist_tracks(token, playlist_id, limit=50):
+    """
+    Get tracks from a specific playlist.
+    """
+    url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+    params = {"limit": limit, "fields": "items(track(name,artists,uri,album))"}
+    headers = {"Authorization": f"Bearer {token}"}
+
+    try:
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            # Extract track objects from the response
+            tracks = []
+            for item in data.get("items", []):
+                if item.get("track"):
+                    tracks.append(item["track"])
+            return tracks
+    except Exception:
+        pass
+
+    return []
+
+
+def generate_playlist_from_profile_and_artist(profile, seed_artist, token, variety=5, discovery=5, limit=20):
+    """
+    Generate a playlist combining:
+    - Profile mood/tags from analyzed playlist
+    - Seed artist for similar artists
+    - Variety (how many different artists)
+    - Discovery (balance between profile tags and seed artist)
+    """
+    from app.helper.recommendations import get_similar_artists_lastfm, search_artist_top_tracks_spotify
+
+    collected_tracks = []
+    seen_uris = set()
+
+    # Calculate how many tracks from profile tags vs seed artist
+    # Discovery: 1 = mostly profile, 10 = mostly seed artist
+    profile_ratio = 1 - (discovery / 10)
+    profile_tracks_target = max(1, int(limit * profile_ratio))
+    seed_tracks_target = limit - profile_tracks_target
+
+    # Part 1: Get tracks based on profile tags
+    if profile and profile.get('top_tags'):
+        tags_to_use = profile['top_tags'][:variety]
+        tracks_per_tag = max(1, profile_tracks_target // len(tags_to_use)) + 1
+
+        for tag, count in tags_to_use:
+            if len(collected_tracks) >= profile_tracks_target:
+                break
+
+            tag_artists = get_artists_by_tag(tag, limit=3)
+            for artist in tag_artists:
+                if len(collected_tracks) >= profile_tracks_target:
+                    break
+
+                tracks = search_artist_top_tracks_spotify(artist, token, limit=2)
+                for track in tracks:
+                    if track and track.get('uri') not in seen_uris:
+                        collected_tracks.append(track)
+                        seen_uris.add(track['uri'])
+                        if len(collected_tracks) >= profile_tracks_target:
+                            break
+
+    # Part 2: Get tracks based on seed artist and similar artists
+    if seed_artist:
+        # Get seed artist's top tracks
+        seed_tracks = search_artist_top_tracks_spotify(seed_artist, token, limit=seed_tracks_target // 2 + 1)
+        for track in seed_tracks:
+            if track and track.get('uri') not in seen_uris:
+                collected_tracks.append(track)
+                seen_uris.add(track['uri'])
+                if len(collected_tracks) >= limit:
+                    break
+
+        # Get similar artists
+        similar_artists = get_similar_artists_lastfm(seed_artist, limit=variety)
+        for artist in similar_artists:
+            if len(collected_tracks) >= limit:
+                break
+
+            tracks = search_artist_top_tracks_spotify(artist, token, limit=2)
+            for track in tracks:
+                if track and track.get('uri') not in seen_uris:
+                    collected_tracks.append(track)
+                    seen_uris.add(track['uri'])
+                    if len(collected_tracks) >= limit:
+                        break
+
+    # Shuffle to mix profile and seed artist tracks
+    import random
+    random.shuffle(collected_tracks)
+
+    return collected_tracks[:limit]

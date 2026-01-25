@@ -14,6 +14,45 @@ app.config['SESSION_COOKIE_SECURE'] = app.config.get('REDIRECT_URL', '').startsw
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
+
+def refresh_token_if_needed():
+    """
+    Check if the access token is expired and refresh it if needed.
+    Returns the valid access_token or None if refresh failed.
+    """
+    sess_access_token = session.get("access_token")
+    sess_refresh_token = session.get('refresh_token')
+    sess_token_create_time = session.get('token_create')
+
+    if not sess_access_token or not sess_refresh_token or not sess_token_create_time:
+        return None
+
+    # Check if token is expired (older than ~58 minutes)
+    if (time.time() - sess_token_create_time) > 3500:
+        token_url = "https://accounts.spotify.com/api/token"
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        payload = {"grant_type": "refresh_token", "refresh_token": sess_refresh_token}
+
+        resp = requests.post(
+            token_url,
+            headers=headers,
+            data=payload,
+            auth=requests.auth.HTTPBasicAuth(
+                app.config['SPOTIFY_CLIENT_ID'],
+                app.config['SPOTIFY_CLIENT_SECRET']
+            )
+        )
+
+        if 200 <= resp.status_code <= 299:
+            parsed_resp = resp.json()
+            session['access_token'] = parsed_resp['access_token']
+            session['token_create'] = time.time()  # Update the token creation time
+            return parsed_resp['access_token']
+        else:
+            return None
+
+    return sess_access_token
+
 #app routes
 @app.route('/', methods=['GET'])
 def landing():
@@ -32,65 +71,53 @@ def index():
         
         return redirect(url)
     
-    sess_access_token, sess_refresh_token, sess_token_create_time = session.get("access_token", None) , session.get('refresh_token', None), session.get('token_create', None)
-    if (time.time() - sess_token_create_time) > 3500:
-        token_url = "https://accounts.spotify.com/api/token"
-        headers = {"Content-Type":"application/x-www-form-urlencoded"}
-        payload = {"grant_type":"refresh_token","refresh_token":sess_refresh_token}
-        resp = requests.post(token_url, headers=headers, data=payload, auth=requests.auth.HTTPBasicAuth(app.config['SPOTIFY_CLIENT_ID'], app.config['SPOTIFY_CLIENT_SECRET']))
-        
-        if 200 <= resp.status_code <= 299:
-            parsed_resp = resp.json()
-            session['access_token'] = parsed_resp['access_token']
+    # Refresh token if needed
+    sess_access_token = refresh_token_if_needed()
+    if not sess_access_token:
+        return redirect(url)
 
-        else:
-            return redirect(url)
-
-    
     return render_template("index.html")
 
 @app.route("/get-recommended-playlist", methods=["POST"])
 def get_rec_playlist():
-    #if expired, refresh the token here 
-    sess_access_token, sess_refresh_token, sess_token_create_time = session.get("access_token", None) , session.get('refresh_token', None), session.get('token_create', None)
+    # Refresh token if needed
+    sess_access_token = refresh_token_if_needed()
+    if not sess_access_token:
+        return jsonify({"error": "Token expired, please re-login"}), 401
 
-    if not sess_access_token or not sess_refresh_token or not sess_token_create_time:
-        return "error, missing token", 403
-
-    if (time.time() - sess_token_create_time) > 3500:
-        return "error, expired token", 400
-
-    #get json data from request
+    # Get json data from request
     data = request.get_json()
 
-    #fetch recommended tracks using Last.fm + Spotify search
+    # Fetch recommended tracks using Last.fm + Spotify search
     tracks = recommendations.gen_recommendations(data, sess_access_token, None)
-    uris = [i['uri'] for i in tracks] 
+    uris = [i['uri'] for i in tracks]
     resp_dict = {
-        "songs":tracks,
+        "songs": tracks,
         "uris": json.dumps(uris)
     }
     return jsonify(resp_dict) 
 
 @app.route('/save-private-playlist', methods=['POST'])
 def create_private_playlist():
-    sess_access_token, sess_refresh_token, sess_token_create_time, sess_username = session.get("access_token", None) , session.get('refresh_token', None), session.get('token_create', None), session.get('spotify_username', None)
+    sess_username = session.get('spotify_username')
 
-    if not sess_access_token or not sess_refresh_token or not sess_token_create_time or not sess_username:
-        return "error, missing token", 403 
+    if not sess_username:
+        return jsonify({"error": "Not authenticated"}), 403
 
-    if (time.time() - sess_token_create_time) > 3500:
-        return "error, expired token", 400
+    # Refresh token if needed
+    sess_access_token = refresh_token_if_needed()
+    if not sess_access_token:
+        return jsonify({"error": "Token expired, please re-login"}), 401
 
-    #get json data from request
+    # Get json data from request
     data = request.get_json()
 
     status = create_playlist.create_playlist(sess_username, sess_access_token, data)
 
     if not status:
-        return "Error creating playlist", 400
+        return jsonify({"error": "Error creating playlist"}), 400
     else:
-        return "Success creating playlist",200
+        return jsonify({"success": True}), 200
 
 @app.route('/spotify-oauth2callback', methods=['GET'])
 def spotify_oauth2callback():
@@ -133,13 +160,9 @@ def music_profile():
     """
     Analyze user's top tracks and create a taste profile using Last.fm tags.
     """
-    sess_access_token = session.get("access_token")
-    sess_token_create_time = session.get('token_create')
-
-    if not sess_access_token or not sess_token_create_time:
-        return redirect(url_for('index'))
-
-    if (time.time() - sess_token_create_time) > 3500:
+    # Refresh token if needed
+    sess_access_token = refresh_token_if_needed()
+    if not sess_access_token:
         return redirect(url_for('index'))
 
     # Get user's top tracks from Spotify
@@ -169,14 +192,10 @@ def get_profile_api():
     """
     API endpoint to get user's taste profile as JSON.
     """
-    sess_access_token = session.get("access_token")
-    sess_token_create_time = session.get('token_create')
-
-    if not sess_access_token or not sess_token_create_time:
-        return jsonify({"error": "Not authenticated"}), 403
-
-    if (time.time() - sess_token_create_time) > 3500:
-        return jsonify({"error": "Token expired"}), 400
+    # Refresh token if needed
+    sess_access_token = refresh_token_if_needed()
+    if not sess_access_token:
+        return jsonify({"error": "Token expired, please re-login"}), 401
 
     time_range = request.args.get('time_range', 'medium_term')
     top_tracks = lastfm_profile.get_user_top_tracks(sess_access_token, limit=30, time_range=time_range)
@@ -199,14 +218,10 @@ def generate_from_profile():
     """
     Generate playlist recommendations based on user's taste profile.
     """
-    sess_access_token = session.get("access_token")
-    sess_token_create_time = session.get('token_create')
-
-    if not sess_access_token or not sess_token_create_time:
-        return jsonify({"error": "Not authenticated"}), 403
-
-    if (time.time() - sess_token_create_time) > 3500:
-        return jsonify({"error": "Token expired"}), 400
+    # Refresh token if needed
+    sess_access_token = refresh_token_if_needed()
+    if not sess_access_token:
+        return jsonify({"error": "Token expired, please re-login"}), 401
 
     data = request.get_json()
     track_count = int(data.get('track-count', 15))
@@ -252,14 +267,10 @@ def get_user_playlists():
     """
     Get all playlists of the current user.
     """
-    sess_access_token = session.get("access_token")
-    sess_token_create_time = session.get('token_create')
-
-    if not sess_access_token or not sess_token_create_time:
-        return jsonify({"error": "Not authenticated"}), 403
-
-    if (time.time() - sess_token_create_time) > 3500:
-        return jsonify({"error": "Token expired"}), 400
+    # Refresh token if needed
+    sess_access_token = refresh_token_if_needed()
+    if not sess_access_token:
+        return jsonify({"error": "Token expired, please re-login"}), 401
 
     playlists = lastfm_profile.get_user_playlists(sess_access_token, limit=50)
 
@@ -281,14 +292,10 @@ def analyze_playlist(playlist_id):
     """
     Analyze a specific playlist and return its mood profile.
     """
-    sess_access_token = session.get("access_token")
-    sess_token_create_time = session.get('token_create')
-
-    if not sess_access_token or not sess_token_create_time:
-        return jsonify({"error": "Not authenticated"}), 403
-
-    if (time.time() - sess_token_create_time) > 3500:
-        return jsonify({"error": "Token expired"}), 400
+    # Refresh token if needed
+    sess_access_token = refresh_token_if_needed()
+    if not sess_access_token:
+        return jsonify({"error": "Token expired, please re-login"}), 401
 
     # Get tracks from playlist
     tracks = lastfm_profile.get_playlist_tracks(sess_access_token, playlist_id, limit=30)
@@ -323,14 +330,10 @@ def generate_from_playlist():
     - Seed artist
     - Variety and Discovery settings
     """
-    sess_access_token = session.get("access_token")
-    sess_token_create_time = session.get('token_create')
-
-    if not sess_access_token or not sess_token_create_time:
-        return jsonify({"error": "Not authenticated"}), 403
-
-    if (time.time() - sess_token_create_time) > 3500:
-        return jsonify({"error": "Token expired"}), 400
+    # Refresh token if needed
+    sess_access_token = refresh_token_if_needed()
+    if not sess_access_token:
+        return jsonify({"error": "Token expired, please re-login"}), 401
 
     data = request.get_json()
     playlist_id = data.get('playlist_id')

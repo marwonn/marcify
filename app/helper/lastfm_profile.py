@@ -10,8 +10,8 @@ TAG_CATEGORIES = {
         'low': ['calm', 'chill', 'relaxing', 'mellow', 'soft', 'slow', 'ambient', 'peaceful', 'gentle']
     },
     'mood': {
-        'positive': ['happy', 'uplifting', 'cheerful', 'fun', 'feel good', 'joyful', 'optimistic', 'bright'],
-        'negative': ['sad', 'melancholic', 'dark', 'depressing', 'angry', 'aggressive', 'haunting', 'moody']
+        'high': ['happy', 'uplifting', 'cheerful', 'fun', 'feel good', 'joyful', 'optimistic', 'bright'],
+        'low': ['sad', 'melancholic', 'dark', 'depressing', 'angry', 'aggressive', 'haunting', 'moody']
     },
     'danceability': {
         'high': ['dance', 'danceable', 'groovy', 'funky', 'rhythm', 'beat', 'club', 'party', 'disco'],

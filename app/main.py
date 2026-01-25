@@ -1,10 +1,8 @@
-import json 
-import pandas as pd
-import requests 
-import spotipy
+import json
+import requests
 
 from flask import Flask, render_template, redirect, url_for, jsonify, session, request
-from app.helper import figures, recommendations, create_playlist, audio_features
+from app.helper import recommendations, create_playlist, lastfm_profile
 import time
 from app.config import Config
 
@@ -130,28 +128,120 @@ def spotify_oauth2callback():
     else:
         return "Error during authentication", 200
 
-@app.route('/analyzer')
-def playlist_analyzer():
-    #if expired, refresh the token here 
-    sess_access_token, sess_refresh_token, sess_token_create_time, sess_username = session.get("access_token", None) , session.get('refresh_token', None), session.get('token_create', None), session.get('spotify_username')
+@app.route('/profile')
+def music_profile():
+    """
+    Analyze user's top tracks and create a taste profile using Last.fm tags.
+    """
+    sess_access_token = session.get("access_token")
+    sess_token_create_time = session.get('token_create')
 
-    if not sess_access_token or not sess_refresh_token or not sess_token_create_time:
-        return "error, missing token", 403
+    if not sess_access_token or not sess_token_create_time:
+        return redirect(url_for('index'))
 
     if (time.time() - sess_token_create_time) > 3500:
-        return "error, expired token", 400
+        return redirect(url_for('index'))
 
-    sp = spotipy.Spotify(auth=sess_access_token) 
-    
-    most_loved_songs_list = audio_features.get_playlist_audio_features(sess_username, sess_access_token, sp)
-    (df, track_name, artist_name, popularity, album_cover) = most_loved_songs_list
+    # Get user's top tracks from Spotify
+    time_range = request.args.get('time_range', 'medium_term')
+    top_tracks = lastfm_profile.get_user_top_tracks(sess_access_token, limit=30, time_range=time_range)
 
-    data = pd.DataFrame(df)
-    number_counter = [i+1 for i in range(len(popularity)+1)]
-    table_data = zip(number_counter, track_name, artist_name, popularity, album_cover)
+    if not top_tracks:
+        return "Could not fetch your top tracks", 400
 
-    #violin_plot = figures.make_figures(track_name, popularity)
-    radar_chart = figures.radar_chart(data)
+    # Analyze tracks with Last.fm tags
+    profile = lastfm_profile.analyze_tracks_profile(top_tracks)
 
-    return render_template("analyzer.html", table_data=table_data,
-                                            radar_chart=radar_chart)
+    # Store profile in session for playlist generation
+    session['taste_profile'] = {
+        'scores': profile['scores'],
+        'top_tags': profile['top_tags'][:10],
+        'genres': profile['genres']
+    }
+
+    return render_template("profile.html",
+                          profile=profile,
+                          time_range=time_range)
+
+
+@app.route('/api/profile', methods=['GET'])
+def get_profile_api():
+    """
+    API endpoint to get user's taste profile as JSON.
+    """
+    sess_access_token = session.get("access_token")
+    sess_token_create_time = session.get('token_create')
+
+    if not sess_access_token or not sess_token_create_time:
+        return jsonify({"error": "Not authenticated"}), 403
+
+    if (time.time() - sess_token_create_time) > 3500:
+        return jsonify({"error": "Token expired"}), 400
+
+    time_range = request.args.get('time_range', 'medium_term')
+    top_tracks = lastfm_profile.get_user_top_tracks(sess_access_token, limit=30, time_range=time_range)
+
+    if not top_tracks:
+        return jsonify({"error": "Could not fetch top tracks"}), 400
+
+    profile = lastfm_profile.analyze_tracks_profile(top_tracks)
+
+    return jsonify({
+        'scores': profile['scores'],
+        'top_tags': profile['top_tags'][:15],
+        'genres': profile['genres'],
+        'track_count': profile['track_count']
+    })
+
+
+@app.route('/generate-from-profile', methods=['POST'])
+def generate_from_profile():
+    """
+    Generate playlist recommendations based on user's taste profile.
+    """
+    sess_access_token = session.get("access_token")
+    sess_token_create_time = session.get('token_create')
+
+    if not sess_access_token or not sess_token_create_time:
+        return jsonify({"error": "Not authenticated"}), 403
+
+    if (time.time() - sess_token_create_time) > 3500:
+        return jsonify({"error": "Token expired"}), 400
+
+    data = request.get_json()
+    track_count = int(data.get('track-count', 15))
+
+    # Get stored profile or create new one
+    taste_profile = session.get('taste_profile')
+    if not taste_profile:
+        top_tracks = lastfm_profile.get_user_top_tracks(sess_access_token, limit=30)
+        if top_tracks:
+            profile = lastfm_profile.analyze_tracks_profile(top_tracks)
+            taste_profile = {
+                'scores': profile['scores'],
+                'top_tags': profile['top_tags'][:10],
+                'genres': profile['genres']
+            }
+
+    if not taste_profile:
+        return jsonify({"error": "Could not create taste profile"}), 400
+
+    # Generate tracks based on profile
+    tracks = lastfm_profile.get_similar_tracks_by_profile(
+        {'top_tags': taste_profile['top_tags'], 'scores': taste_profile['scores']},
+        sess_access_token,
+        limit=track_count
+    )
+
+    uris = [t['uri'] for t in tracks if t]
+    return jsonify({
+        "songs": tracks,
+        "uris": json.dumps(uris),
+        "profile_tags": taste_profile['top_tags'][:5]
+    })
+
+
+@app.route('/analyzer')
+def playlist_analyzer():
+    """Redirect old analyzer route to new profile page."""
+    return redirect(url_for('music_profile'))

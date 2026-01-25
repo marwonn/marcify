@@ -2,8 +2,7 @@
 
 ![Python3](https://img.shields.io/badge/Python-3-brightgreen)
 ![Flask](https://img.shields.io/badge/Flask-2.2.5-red)
-![jQuery](https://img.shields.io/badge/jQuery-3.5.1-yellow)
-![Bootstrap](https://img.shields.io/badge/Bootstrap-4.5.2-blue)
+![Docker](https://img.shields.io/badge/Docker-supported-blue)
 ![License](https://img.shields.io/badge/License-GPL%20v3.0-lightgrey)
 
 Generate personalized Spotify playlists based on your favorite artists. Enter a seed artist, adjust the settings, and create a playlist with similar music.
@@ -30,103 +29,156 @@ Since Spotify deprecated their `/recommendations` API endpoint in November 2024,
 
 ---
 
-## Quick Start
+## Deployment
 
-### 1. Prerequisites
+### Option 1: Docker Compose (Recommended)
 
-You need accounts on:
-- [Spotify Developer](https://developer.spotify.com) (free)
-- [Last.fm API](https://www.last.fm/api/account/create) (free)
-- [Render](https://render.com) (free tier available)
-- GitHub
+The easiest way to run Marcify on your own server.
 
-### 2. Set Up Spotify App
+#### Prerequisites
 
-1. Go to your [Spotify Developer Dashboard](https://developer.spotify.com/dashboard/)
-2. Click **Create App**
-3. Fill in the app details
-4. In **Settings**, add a Redirect URI:
-   ```
-   https://YOUR-APP-NAME.onrender.com/spotify-oauth2callback
-   ```
-5. Go to **User Management** and add your Spotify email (required for testing)
-6. Note your **Client ID** and **Client Secret**
+- Docker and Docker Compose installed
+- Spotify Developer account
+- Last.fm API key
 
-### 3. Get Last.fm API Key
+#### Step 1: Get API Credentials
 
-1. Go to [Last.fm API Account Creation](https://www.last.fm/api/account/create)
-2. Fill in the form (application name, description)
-3. Note your **API Key**
+**Spotify:**
+1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard/)
+2. Create a new app
+3. Add redirect URI: `http://YOUR-SERVER:5000/spotify-oauth2callback`
+4. In **User Management**, add your Spotify email
+5. Copy **Client ID** and **Client Secret**
 
-### 4. Deploy on Render
+**Last.fm:**
+1. Go to [Last.fm API](https://www.last.fm/api/account/create)
+2. Create an API account
+3. Copy your **API Key**
+
+#### Step 2: Configure Environment
+
+```bash
+# Clone the repository
+git clone https://github.com/marwonn/marcify.git
+cd marcify
+
+# Copy the example environment file
+cp .env.example .env
+
+# Edit .env with your credentials
+nano .env
+```
+
+Fill in your `.env` file:
+
+```env
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+REDIRECT_URL=http://your-server:5000/spotify-oauth2callback
+SECRET_KEY=any_random_string_here
+LASTFM_API_KEY=your_lastfm_api_key
+USERNAME=your_spotify_username
+```
+
+#### Step 3: Start the Application
+
+```bash
+docker compose up -d
+```
+
+The app is now running at `http://your-server:5000`
+
+#### Useful Docker Commands
+
+```bash
+# View logs
+docker compose logs -f
+
+# Stop the application
+docker compose down
+
+# Rebuild after updates
+docker compose up -d --build
+
+# Restart
+docker compose restart
+```
+
+---
+
+### Option 2: Deploy on Render
+
+For a free cloud deployment without managing your own server.
 
 1. Fork this repository to your GitHub
 2. Go to [Render Dashboard](https://dashboard.render.com)
 3. Click **New** → **Web Service**
 4. Connect your GitHub and select the forked repo
-5. Configure the service:
+5. Configure:
 
    | Setting | Value |
    |---------|-------|
-   | **Name** | `your-app-name` (must match the redirect URI) |
-   | **Region** | Choose nearest to you |
+   | **Name** | `your-app-name` |
    | **Build Command** | `pip install -r requirements.txt` |
    | **Start Command** | `gunicorn wsgi:app` |
 
-6. Add **Environment Variables**:
+6. Add environment variables (same as above, but with Render URL):
+   ```
+   REDIRECT_URL=https://your-app-name.onrender.com/spotify-oauth2callback
+   ```
 
-   | Key | Value |
-   |-----|-------|
-   | `SPOTIFY_CLIENT_ID` | Your Spotify Client ID |
-   | `SPOTIFY_CLIENT_SECRET` | Your Spotify Client Secret |
-   | `REDIRECT_URL` | `https://your-app-name.onrender.com/spotify-oauth2callback` |
-   | `SECRET_KEY` | Any random string (e.g., `mysecretkey123`) |
-   | `LASTFM_API_KEY` | Your Last.fm API Key |
-   | `USERNAME` | Your Spotify username |
-
-7. Click **Deploy** and wait for the build to complete
+7. Click **Deploy**
 
 ---
 
-## Playlist Settings Explained
-
-| Setting | Description |
-|---------|-------------|
-| **Seed Artist** | The artist to base recommendations on. Similar artists will be found. |
-| **Variety** | How many different artists to explore (1 = few, 10 = many) |
-| **Discovery** | Balance between seed artist and new artists (1 = mostly seed artist, 10 = mostly new artists) |
-| **Track Count** | Number of songs in the playlist (1-20) |
-| **Fallback Genre** | Used when the seed artist can't be found |
-
----
-
-## Running Locally
+### Option 3: Run Locally (Development)
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/marcify.git
+# Clone and enter directory
+git clone https://github.com/marwonn/marcify.git
 cd marcify
 
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Set environment variables (create a .env file or export manually)
-export SPOTIFY_CLIENT_ID=your_client_id
-export SPOTIFY_CLIENT_SECRET=your_client_secret
-export REDIRECT_URL=http://localhost:5000/spotify-oauth2callback
-export SECRET_KEY=your_secret_key
-export LASTFM_API_KEY=your_lastfm_key
-export USERNAME=your_spotify_username
+# Copy and edit environment file
+cp .env.example .env
+nano .env
 
 # Run the app
 flask run
 ```
 
-**Note:** For local development, add `http://localhost:5000/spotify-oauth2callback` to your Spotify app's redirect URIs.
+App runs at `http://localhost:5000`
+
+---
+
+## Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `SPOTIFY_CLIENT_ID` | From Spotify Developer Dashboard | `abc123...` |
+| `SPOTIFY_CLIENT_SECRET` | From Spotify Developer Dashboard | `xyz789...` |
+| `REDIRECT_URL` | OAuth callback URL (must match Spotify app settings) | `http://localhost:5000/spotify-oauth2callback` |
+| `SECRET_KEY` | Random string for Flask sessions | `mysupersecretkey` |
+| `LASTFM_API_KEY` | From Last.fm API | `def456...` |
+| `USERNAME` | Your Spotify username | `myspotifyuser` |
+
+---
+
+## Playlist Settings
+
+| Setting | Description |
+|---------|-------------|
+| **Seed Artist** | The artist to base recommendations on |
+| **Variety** | How many different artists to explore (1-10) |
+| **Discovery** | Balance between seed artist and new artists (1-10) |
+| **Track Count** | Number of songs in the playlist (1-20) |
+| **Fallback Genre** | Used when the seed artist can't be found |
 
 ---
 
@@ -139,17 +191,15 @@ marcify/
 │   │   ├── recommendations.py  # Last.fm + Spotify search logic
 │   │   ├── create_playlist.py  # Spotify playlist creation
 │   │   └── ...
-│   ├── static/
-│   │   ├── css/
-│   │   └── js/main.js
-│   ├── templates/
-│   │   ├── index.html          # Main generator page
-│   │   └── ...
+│   ├── static/                 # CSS, JavaScript
+│   ├── templates/              # HTML templates
 │   ├── config.py               # Environment configuration
 │   └── main.py                 # Flask routes
+├── Dockerfile
+├── docker-compose.yml
+├── .env.example
 ├── requirements.txt
-├── wsgi.py
-└── README.md
+└── wsgi.py
 ```
 
 ---
@@ -158,10 +208,11 @@ marcify/
 
 | Problem | Solution |
 |---------|----------|
-| "Error during authentication" | Check that your Redirect URL matches exactly in Spotify and Render |
-| No recommendations found | Make sure `LASTFM_API_KEY` is set correctly |
-| 403 Forbidden | Add your Spotify email to User Management in the Spotify Developer Dashboard |
-| Token expired | The app should auto-refresh; if not, try logging in again |
+| "Error during authentication" | Redirect URL must match exactly in Spotify settings and `.env` |
+| No recommendations found | Check that `LASTFM_API_KEY` is set correctly |
+| 403 Forbidden from Spotify | Add your email in Spotify Dashboard → User Management |
+| Container won't start | Check logs with `docker compose logs` |
+| Token expired | App auto-refreshes tokens; try logging in again if issues persist |
 
 ---
 
@@ -169,7 +220,6 @@ marcify/
 
 - [Spotify Developer Documentation](https://developer.spotify.com/documentation/web-api)
 - [Last.fm API Documentation](https://www.last.fm/api)
-- [Original Repository](https://github.com/marwonn/spotify-playlist-generator-analyzer)
 
 ---
 

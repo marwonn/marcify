@@ -1,0 +1,14 @@
+services:
+  marcify:
+    build: .
+    container_name: marcify
+    ports:
+      - "5000:5000"
+    environment:
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - REDIRECT_URL=${REDIRECT_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - LASTFM_API_KEY=${LASTFM_API_KEY}
+      - USERNAME=${USERNAME}
+    restart: unless-stopped

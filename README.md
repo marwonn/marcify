@@ -82,6 +82,14 @@ USERNAME=your_spotify_username
 
 #### Step 3: Start the Application
 
+**Option A: Use pre-built image from GitHub Container Registry (recommended)**
+
+```bash
+docker compose -f docker-compose.ghcr.yml up -d
+```
+
+**Option B: Build locally**
+
 ```bash
 docker compose up -d
 ```
@@ -97,7 +105,11 @@ docker compose logs -f
 # Stop the application
 docker compose down
 
-# Rebuild after updates
+# Update to latest image (ghcr.io)
+docker compose -f docker-compose.ghcr.yml pull
+docker compose -f docker-compose.ghcr.yml up -d
+
+# Rebuild locally after code changes
 docker compose up -d --build
 
 # Restart
@@ -186,6 +198,9 @@ App runs at `http://localhost:5000`
 
 ```
 marcify/
+├── .github/
+│   └── workflows/
+│       └── docker-publish.yml  # Auto-build & push to ghcr.io
 ├── app/
 │   ├── helper/
 │   │   ├── recommendations.py  # Last.fm + Spotify search logic
@@ -196,7 +211,8 @@ marcify/
 │   ├── config.py               # Environment configuration
 │   └── main.py                 # Flask routes
 ├── Dockerfile
-├── docker-compose.yml
+├── docker-compose.yml          # Build locally
+├── docker-compose.ghcr.yml     # Use pre-built image
 ├── .env.example
 ├── requirements.txt
 └── wsgi.py

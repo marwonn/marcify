@@ -11,6 +11,11 @@ from app.config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# Session configuration for HTTPS
+app.config['SESSION_COOKIE_SECURE'] = app.config.get('REDIRECT_URL', '').startswith('https')
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
 #app routes
 @app.route('/', methods=['GET'])
 def landing():

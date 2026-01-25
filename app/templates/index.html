@@ -14,14 +14,17 @@
 
   <style>
     .playlist-item {
-      padding: 10px;
-      border: 1px solid #444;
-      border-radius: 8px;
-      margin-bottom: 10px;
+      padding: 14px 12px;
+      border: 2px solid #444;
+      border-radius: 10px;
+      margin-bottom: 12px;
       cursor: pointer;
       transition: all 0.2s;
+      min-height: 70px;
+      -webkit-tap-highlight-color: rgba(29, 185, 84, 0.3);
     }
-    .playlist-item:hover {
+    .playlist-item:hover,
+    .playlist-item:active {
       background-color: #2c3e50;
     }
     .playlist-item.selected {
@@ -29,51 +32,138 @@
       background-color: #1a472a;
     }
     .playlist-img {
-      width: 50px;
-      height: 50px;
+      width: 56px;
+      height: 56px;
       object-fit: cover;
-      border-radius: 4px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+    .playlist-info {
+      min-width: 0;
+      overflow: hidden;
+    }
+    .playlist-info strong {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .score-bar {
-      height: 20px;
+      height: 24px;
       background: linear-gradient(to right, #3498db, #1db954);
-      border-radius: 4px;
+      border-radius: 6px;
     }
     .score-bar-container {
       background-color: #2c3e50;
-      border-radius: 4px;
+      border-radius: 6px;
       overflow: hidden;
     }
     .mood-tag {
       display: inline-block;
-      padding: 4px 10px;
-      margin: 3px;
+      padding: 8px 14px;
+      margin: 4px;
       background-color: #1db954;
-      border-radius: 15px;
-      font-size: 12px;
+      border-radius: 20px;
+      font-size: 13px;
     }
     .step-card {
       background-color: #1a1a2e;
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 20px;
       margin-bottom: 20px;
     }
     .step-number {
-      display: inline-block;
-      width: 30px;
-      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
       background-color: #1db954;
       border-radius: 50%;
-      text-align: center;
-      line-height: 30px;
       font-weight: bold;
       margin-right: 10px;
+      flex-shrink: 0;
+    }
+    .step-header {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .step-header h4 {
+      margin: 0;
+      flex: 1;
+      min-width: 200px;
     }
     #mood-profile {
       display: none;
     }
     #generator-settings {
       display: none;
+    }
+    .song-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #333;
+      min-height: 60px;
+    }
+    .song-item img {
+      width: 48px;
+      height: 48px;
+      margin-right: 12px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .song-info {
+      min-width: 0;
+      overflow: hidden;
+    }
+    .song-info strong {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .song-info small {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Mobile specific */
+    @media (max-width: 768px) {
+      .step-card {
+        padding: 16px;
+        border-radius: 10px;
+      }
+      .step-header h4 {
+        font-size: 1.1rem;
+      }
+      #playlists-container {
+        max-height: 50vh !important;
+      }
+      .mood-scores-container,
+      .mood-tags-container {
+        margin-bottom: 1rem;
+      }
+      #generated-songs {
+        max-height: 50vh !important;
+      }
+      .slider-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      }
+      .slider-value {
+        background: #1db954;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        min-width: 36px;
+        text-align: center;
+      }
     }
   </style>
 </head>
@@ -97,69 +187,86 @@
   <div class="container">
     <!-- Step 1: Select Playlist -->
     <div class="step-card" id="step-1">
-      <h4><span class="step-number">1</span> Select a Playlist to Analyze</h4>
-      <p class="text-muted">Choose one of your playlists as the mood template</p>
+      <div class="step-header mb-3">
+        <span class="step-number">1</span>
+        <h4>Select a Playlist</h4>
+      </div>
+      <p class="text-muted">Choose a playlist as your mood template</p>
 
-      <div id="playlists-loading" class="text-center">
+      <div id="playlists-loading" class="text-center py-4">
         <p>Loading your playlists...</p>
       </div>
 
-      <div id="playlists-container" style="max-height: 300px; overflow-y: auto;">
+      <div id="playlists-container" style="max-height: 350px; overflow-y: auto; -webkit-overflow-scrolling: touch;">
         <!-- Playlists will be loaded here -->
       </div>
 
-      <button id="analyze-playlist-btn" class="btn btn-primary btn-block mt-3" disabled>
+      <button id="analyze-playlist-btn" class="btn btn-primary btn-block btn-lg mt-3" disabled>
         Analyze Selected Playlist
       </button>
     </div>
 
     <!-- Step 2: Mood Profile -->
     <div class="step-card" id="mood-profile">
-      <h4><span class="step-number">2</span> Playlist Mood Profile</h4>
-      <p class="text-muted">Based on <span id="analyzed-playlist-name"></span></p>
+      <div class="step-header mb-3">
+        <span class="step-number">2</span>
+        <h4>Mood Profile</h4>
+      </div>
+      <p class="text-muted mb-3">Based on <strong id="analyzed-playlist-name"></strong></p>
 
       <div class="row">
-        <div class="col-md-6">
-          <h5>Mood Scores</h5>
+        <div class="col-12 col-md-6 mood-scores-container">
+          <h5 class="mb-3">Mood Scores</h5>
           <div id="mood-scores"></div>
         </div>
-        <div class="col-md-6">
-          <h5>Top Tags</h5>
+        <div class="col-12 col-md-6 mood-tags-container">
+          <h5 class="mb-3">Top Tags</h5>
           <div id="mood-tags"></div>
         </div>
       </div>
 
-      <button id="continue-to-generator" class="btn btn-success btn-block mt-3">
+      <button id="continue-to-generator" class="btn btn-success btn-block btn-lg mt-4">
         Continue to Generator
       </button>
     </div>
 
     <!-- Step 3: Generator Settings -->
     <div class="step-card" id="generator-settings">
-      <h4><span class="step-number">3</span> Generate New Playlist</h4>
-      <p class="text-muted">Combine the mood profile with your preferences</p>
+      <div class="step-header mb-3">
+        <span class="step-number">3</span>
+        <h4>Generate Playlist</h4>
+      </div>
+      <p class="text-muted mb-4">Combine mood profile with your preferences</p>
 
       <div class="row">
-        <div class="col-md-6">
+        <div class="col-12 col-md-6 mb-4">
           <div class="form-group">
-            <label for="seed-artist">Seed Artist <small class="text-muted">(adds similar artists)</small></label>
-            <input type="text" id="seed-artist" class="form-control" placeholder="e.g. Radiohead, Daft Punk...">
+            <label for="seed-artist" class="mb-2">Seed Artist</label>
+            <input type="text" id="seed-artist" class="form-control" placeholder="e.g. Radiohead, Daft Punk..." autocomplete="off" autocorrect="off" autocapitalize="off">
+            <small class="text-muted">Adds similar artists to your playlist</small>
           </div>
 
           <div class="form-group">
-            <label for="variety">Variety <small class="text-muted">(explore more artists)</small></label>
+            <div class="slider-label">
+              <span>Variety</span>
+              <span class="slider-value" id="variety-value">5</span>
+            </div>
             <input type="range" min="1" max="10" step="1" class="form-control-range" id="variety" value="5">
+            <small class="text-muted">More variety = more different artists</small>
           </div>
 
           <div class="form-group">
-            <label for="discovery">Discovery <small class="text-muted">(mood profile vs. seed artist)</small></label>
+            <div class="slider-label">
+              <span>Discovery</span>
+              <span class="slider-value" id="discovery-value">5</span>
+            </div>
             <input type="range" min="1" max="10" step="1" class="form-control-range" id="discovery" value="5">
-            <small class="text-muted">1 = mostly mood profile, 10 = mostly seed artist</small>
+            <small class="text-muted">1 = mood profile, 10 = seed artist</small>
           </div>
 
           <div class="form-group">
-            <label for="track-count">Number of Tracks</label>
-            <input type="number" class="form-control" id="track-count" value="15" min="5" max="30">
+            <label for="track-count" class="mb-2">Number of Tracks</label>
+            <input type="number" class="form-control" id="track-count" value="15" min="5" max="30" inputmode="numeric">
           </div>
 
           <button id="generate-playlist-btn" class="btn btn-success btn-block btn-lg">
@@ -167,13 +274,13 @@
           </button>
         </div>
 
-        <div class="col-md-6">
-          <h5>Generated Playlist</h5>
-          <div id="generated-songs" style="max-height: 400px; overflow-y: auto;">
-            <p class="text-muted">Click "Generate Playlist" to see recommendations</p>
+        <div class="col-12 col-md-6">
+          <h5 class="mb-3">Generated Playlist</h5>
+          <div id="generated-songs" style="max-height: 400px; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+            <p class="text-muted text-center py-4">Click "Generate" to see recommendations</p>
           </div>
 
-          <button id="save-playlist-btn" class="btn btn-primary btn-block mt-3" style="display: none;">
+          <button id="save-playlist-btn" class="btn btn-primary btn-block btn-lg mt-3" style="display: none;">
             Save to Spotify
           </button>
         </div>
@@ -206,6 +313,14 @@
     // Load playlists on page load
     $(document).ready(function() {
       loadPlaylists();
+
+      // Update slider value displays
+      $('#variety').on('input', function() {
+        $('#variety-value').text($(this).val());
+      });
+      $('#discovery').on('input', function() {
+        $('#discovery-value').text($(this).val());
+      });
     });
 
     function loadPlaylists() {
@@ -215,17 +330,18 @@
         if (response.playlists && response.playlists.length > 0) {
           var html = '';
           response.playlists.forEach(function(pl) {
-            var img = pl.image || 'https://via.placeholder.com/50?text=♪';
-            html += '<div class="playlist-item d-flex align-items-center" data-id="' + pl.id + '" data-name="' + pl.name + '">';
-            html += '<img src="' + img + '" class="playlist-img mr-3">';
-            html += '<div>';
-            html += '<strong>' + pl.name + '</strong><br>';
+            var img = pl.image || 'https://via.placeholder.com/56?text=♪';
+            var safeName = $('<div>').text(pl.name).html();
+            html += '<div class="playlist-item d-flex align-items-center" data-id="' + pl.id + '" data-name="' + safeName + '">';
+            html += '<img src="' + img + '" class="playlist-img mr-3" alt="">';
+            html += '<div class="playlist-info">';
+            html += '<strong>' + safeName + '</strong>';
             html += '<small class="text-muted">' + pl.tracks_total + ' tracks</small>';
             html += '</div></div>';
           });
           $('#playlists-container').html(html);
         } else {
-          $('#playlists-container').html('<p class="text-muted">No playlists found</p>');
+          $('#playlists-container').html('<p class="text-muted text-center py-4">No playlists found</p>');
         }
       }).fail(function() {
         $('#playlists-loading').hide();
@@ -317,11 +433,11 @@
             var albumImg = song.album && song.album.images && song.album.images[2]
               ? song.album.images[2].url : '';
 
-            songsHtml += '<div class="d-flex align-items-center mb-2 p-2" style="border-bottom: 1px solid #333;">';
+            songsHtml += '<div class="song-item">';
             if (albumImg) {
-              songsHtml += '<img src="' + albumImg + '" style="width:40px;height:40px;margin-right:10px;border-radius:4px;">';
+              songsHtml += '<img src="' + albumImg + '" alt="">';
             }
-            songsHtml += '<div><strong>' + song.name + '</strong><br><small class="text-muted">' + artists + '</small></div>';
+            songsHtml += '<div class="song-info"><strong>' + song.name + '</strong><small class="text-muted">' + artists + '</small></div>';
             songsHtml += '</div>';
           });
 

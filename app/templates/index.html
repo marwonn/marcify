@@ -343,9 +343,13 @@
         } else {
           $('#playlists-container').html('<p class="text-muted text-center py-4">No playlists found</p>');
         }
-      }).fail(function() {
+      }).fail(function(xhr) {
         $('#playlists-loading').hide();
-        $('#playlists-container').html('<p class="text-danger">Error loading playlists</p>');
+        if (xhr.status === 401) {
+          window.location.href = '/generator';
+        } else {
+          $('#playlists-container').html('<p class="text-danger">Error loading playlists</p>');
+        }
       });
     }
 
@@ -392,10 +396,15 @@
         $('#mood-tags').html(tagsHtml);
 
         $('#mood-profile').slideDown();
-      }).fail(function() {
+      }).fail(function(xhr) {
         $('#loading').hide();
         $('#analyze-playlist-btn').prop('disabled', false).text('Analyze Selected Playlist');
-        alert('Error analyzing playlist. Please try again.');
+        if (xhr.status === 401) {
+          alert('Session expired. Please log in again.');
+          window.location.href = '/generator';
+        } else {
+          alert('Error analyzing playlist. Please try again.');
+        }
       });
     });
 
@@ -445,8 +454,13 @@
           $('#save-playlist-btn').show();
           $('#generate-playlist-btn').prop('disabled', false).text('Generate Playlist');
         },
-        error: function() {
-          alert('Error generating playlist. Please try again.');
+        error: function(xhr) {
+          if (xhr.status === 401) {
+            alert('Session expired. Please log in again.');
+            window.location.href = '/generator';
+          } else {
+            alert('Error generating playlist. Please try again.');
+          }
           $('#generate-playlist-btn').prop('disabled', false).text('Generate Playlist');
         }
       });
@@ -470,8 +484,13 @@
           $('#saveModal').modal('show');
           $('#save-playlist-btn').prop('disabled', false).text('Save to Spotify');
         },
-        error: function() {
-          alert('Error saving playlist. Please try again.');
+        error: function(xhr) {
+          if (xhr.status === 401) {
+            alert('Session expired. Please log in again.');
+            window.location.href = '/generator';
+          } else {
+            alert('Error saving playlist. Please try again.');
+          }
           $('#save-playlist-btn').prop('disabled', false).text('Save to Spotify');
         }
       });

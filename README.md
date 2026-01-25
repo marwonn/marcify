@@ -29,24 +29,16 @@ Since Spotify deprecated their `/recommendations` API endpoint in November 2024,
 
 ---
 
-## Deployment
+## Quick Start with Docker
 
-### Option 1: Docker Compose (Recommended)
+The fastest way to get Marcify running. No need to clone the repository.
 
-The easiest way to run Marcify on your own server.
-
-#### Prerequisites
-
-- Docker and Docker Compose installed
-- Spotify Developer account
-- Last.fm API key
-
-#### Step 1: Get API Credentials
+### Step 1: Get API Credentials
 
 **Spotify:**
 1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard/)
 2. Create a new app
-3. Add redirect URI: `http://YOUR-SERVER:5000/spotify-oauth2callback`
+3. Add redirect URI: `http://localhost:5000/spotify-oauth2callback`
 4. In **User Management**, add your Spotify email
 5. Copy **Client ID** and **Client Secret**
 
@@ -55,130 +47,117 @@ The easiest way to run Marcify on your own server.
 2. Create an API account
 3. Copy your **API Key**
 
-#### Step 2: Configure Environment
+### Step 2: Download and Configure
 
 ```bash
-# Clone the repository
-git clone https://github.com/marwonn/marcify.git
-cd marcify
+# Download the compose file
+curl -O https://raw.githubusercontent.com/marwonn/marcify/master/docker-compose.ghcr.yml
 
-# Copy the example environment file
-cp .env.example .env
-
-# Edit .env with your credentials
-nano .env
+# Edit and fill in your API credentials
+nano docker-compose.ghcr.yml
 ```
 
-Fill in your `.env` file:
+Fill in your credentials in the `environment` section:
 
-```env
-SPOTIFY_CLIENT_ID=your_spotify_client_id
-SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-REDIRECT_URL=http://your-server:5000/spotify-oauth2callback
-SECRET_KEY=any_random_string_here
-LASTFM_API_KEY=your_lastfm_api_key
-USERNAME=your_spotify_username
+```yaml
+environment:
+  - SPOTIFY_CLIENT_ID=your_spotify_client_id
+  - SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+  - REDIRECT_URL=http://localhost:5000/spotify-oauth2callback
+  - SECRET_KEY=change_this_to_a_random_string
+  - LASTFM_API_KEY=your_lastfm_api_key
+  - USERNAME=your_spotify_username
 ```
 
-#### Step 3: Start the Application
-
-**Option A: Use pre-built image from GitHub Container Registry (recommended)**
+### Step 3: Start
 
 ```bash
 docker compose -f docker-compose.ghcr.yml up -d
 ```
 
-**Option B: Build locally**
+Open http://localhost:5000 in your browser.
 
-```bash
-docker compose up -d
-```
-
-The app is now running at `http://your-server:5000`
-
-#### Useful Docker Commands
+### Useful Commands
 
 ```bash
 # View logs
-docker compose logs -f
+docker compose -f docker-compose.ghcr.yml logs -f
 
-# Stop the application
-docker compose down
+# Stop
+docker compose -f docker-compose.ghcr.yml down
 
-# Update to latest image (ghcr.io)
+# Update to latest version
 docker compose -f docker-compose.ghcr.yml pull
 docker compose -f docker-compose.ghcr.yml up -d
-
-# Rebuild locally after code changes
-docker compose up -d --build
-
-# Restart
-docker compose restart
 ```
 
 ---
 
-### Option 2: Deploy on Render
+## Deployment on a Server
 
-For a free cloud deployment without managing your own server.
+For server deployment, change the `REDIRECT_URL` to match your server:
 
-1. Fork this repository to your GitHub
-2. Go to [Render Dashboard](https://dashboard.render.com)
-3. Click **New** → **Web Service**
-4. Connect your GitHub and select the forked repo
-5. Configure:
+```yaml
+- REDIRECT_URL=http://your-server-ip:5000/spotify-oauth2callback
+```
 
-   | Setting | Value |
-   |---------|-------|
-   | **Name** | `your-app-name` |
-   | **Build Command** | `pip install -r requirements.txt` |
-   | **Start Command** | `gunicorn wsgi:app` |
+Or with a domain and reverse proxy (nginx/traefik):
 
-6. Add environment variables (same as above, but with Render URL):
-   ```
-   REDIRECT_URL=https://your-app-name.onrender.com/spotify-oauth2callback
-   ```
+```yaml
+- REDIRECT_URL=https://marcify.yourdomain.com/spotify-oauth2callback
+```
 
-7. Click **Deploy**
+**Important:** Update the redirect URI in your [Spotify Developer Dashboard](https://developer.spotify.com/dashboard/) to match.
 
 ---
 
-### Option 3: Run Locally (Development)
+## Alternative Deployment Options
+
+### Build from Source
 
 ```bash
-# Clone and enter directory
 git clone https://github.com/marwonn/marcify.git
 cd marcify
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Copy and edit environment file
 cp .env.example .env
-nano .env
-
-# Run the app
-flask run
+nano .env  # Fill in your credentials
+docker compose up -d
 ```
 
-App runs at `http://localhost:5000`
+### Deploy on Render (Free Cloud Hosting)
+
+1. Fork this repository
+2. Go to [Render Dashboard](https://dashboard.render.com)
+3. Create a new **Web Service** and connect your fork
+4. Set **Build Command**: `pip install -r requirements.txt`
+5. Set **Start Command**: `gunicorn wsgi:app`
+6. Add environment variables
+7. Deploy
+
+### Run without Docker (Development)
+
+```bash
+git clone https://github.com/marwonn/marcify.git
+cd marcify
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+nano .env
+flask run
+```
 
 ---
 
 ## Environment Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `SPOTIFY_CLIENT_ID` | From Spotify Developer Dashboard | `abc123...` |
-| `SPOTIFY_CLIENT_SECRET` | From Spotify Developer Dashboard | `xyz789...` |
-| `REDIRECT_URL` | OAuth callback URL (must match Spotify app settings) | `http://localhost:5000/spotify-oauth2callback` |
-| `SECRET_KEY` | Random string for Flask sessions | `mysupersecretkey` |
-| `LASTFM_API_KEY` | From Last.fm API | `def456...` |
-| `USERNAME` | Your Spotify username | `myspotifyuser` |
+| Variable | Description |
+|----------|-------------|
+| `SPOTIFY_CLIENT_ID` | From Spotify Developer Dashboard |
+| `SPOTIFY_CLIENT_SECRET` | From Spotify Developer Dashboard |
+| `REDIRECT_URL` | OAuth callback URL (must match Spotify app settings) |
+| `SECRET_KEY` | Random string for Flask sessions |
+| `LASTFM_API_KEY` | From Last.fm API |
+| `USERNAME` | Your Spotify username |
 
 ---
 
@@ -194,41 +173,14 @@ App runs at `http://localhost:5000`
 
 ---
 
-## Project Structure
-
-```
-marcify/
-├── .github/
-│   └── workflows/
-│       └── docker-publish.yml  # Auto-build & push to ghcr.io
-├── app/
-│   ├── helper/
-│   │   ├── recommendations.py  # Last.fm + Spotify search logic
-│   │   ├── create_playlist.py  # Spotify playlist creation
-│   │   └── ...
-│   ├── static/                 # CSS, JavaScript
-│   ├── templates/              # HTML templates
-│   ├── config.py               # Environment configuration
-│   └── main.py                 # Flask routes
-├── Dockerfile
-├── docker-compose.yml          # Build locally
-├── docker-compose.ghcr.yml     # Use pre-built image
-├── .env.example
-├── requirements.txt
-└── wsgi.py
-```
-
----
-
 ## Troubleshooting
 
 | Problem | Solution |
 |---------|----------|
-| "Error during authentication" | Redirect URL must match exactly in Spotify settings and `.env` |
+| "Error during authentication" | Redirect URL must match exactly in Spotify settings and compose file |
 | No recommendations found | Check that `LASTFM_API_KEY` is set correctly |
 | 403 Forbidden from Spotify | Add your email in Spotify Dashboard → User Management |
-| Container won't start | Check logs with `docker compose logs` |
-| Token expired | App auto-refreshes tokens; try logging in again if issues persist |
+| Container won't start | Check logs with `docker compose -f docker-compose.ghcr.yml logs` |
 
 ---
 

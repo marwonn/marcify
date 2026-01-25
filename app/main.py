@@ -5,11 +5,16 @@ import spotipy
 
 from flask import Flask, render_template, redirect, url_for, jsonify, session, request
 from app.helper import figures, recommendations, create_playlist, audio_features
-from datetime import datetime 
+import time
 from app.config import Config
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Session configuration for HTTPS
+app.config['SESSION_COOKIE_SECURE'] = app.config.get('REDIRECT_URL', '').startswith('https')
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 #app routes
 @app.route('/', methods=['GET'])
@@ -30,7 +35,7 @@ def index():
         return redirect(url)
     
     sess_access_token, sess_refresh_token, sess_token_create_time = session.get("access_token", None) , session.get('refresh_token', None), session.get('token_create', None)
-    if (datetime.utcnow() - sess_token_create_time).total_seconds() > 3500:
+    if (time.time() - sess_token_create_time) > 3500:
         token_url = "https://accounts.spotify.com/api/token"
         headers = {"Content-Type":"application/x-www-form-urlencoded"}
         payload = {"grant_type":"refresh_token","refresh_token":sess_refresh_token}
@@ -54,7 +59,7 @@ def get_rec_playlist():
     if not sess_access_token or not sess_refresh_token or not sess_token_create_time:
         return "error, missing token", 403
 
-    if (datetime.utcnow() - sess_token_create_time).total_seconds() > 3500:
+    if (time.time() - sess_token_create_time) > 3500:
         return "error, expired token", 400
 
     #get json data from request
@@ -76,10 +81,10 @@ def create_private_playlist():
     if not sess_access_token or not sess_refresh_token or not sess_token_create_time or not sess_username:
         return "error, missing token", 403 
 
-    if (datetime.utcnow() - sess_token_create_time).total_seconds() > 3500:
+    if (time.time() - sess_token_create_time) > 3500:
         return "error, expired token", 400
 
-    #get json data from request 
+    #get json data from request
     data = request.get_json()
 
     status = create_playlist.create_playlist(sess_username, sess_access_token, data)
@@ -107,8 +112,8 @@ def spotify_oauth2callback():
     resp = requests.post(url, headers=headers, data=payload, auth=requests.auth.HTTPBasicAuth(app.config['SPOTIFY_CLIENT_ID'], app.config['SPOTIFY_CLIENT_SECRET']))
     if 200 <= resp.status_code <= 299:
         parsed_resp = resp.json()
-        #save the access and refresh tokens to session 
-        session['token_create'] = datetime.utcnow()
+        #save the access and refresh tokens to session
+        session['token_create'] = time.time()
         session['access_token'] = parsed_resp['access_token']
         session['refresh_token'] = parsed_resp['refresh_token'] 
          
@@ -133,9 +138,9 @@ def playlist_analyzer():
     if not sess_access_token or not sess_refresh_token or not sess_token_create_time:
         return "error, missing token", 403
 
-    if (datetime.utcnow() - sess_token_create_time).total_seconds() > 3500:
+    if (time.time() - sess_token_create_time) > 3500:
         return "error, expired token", 400
-    
+
     sp = spotipy.Spotify(auth=sess_access_token) 
     
     most_loved_songs_list = audio_features.get_playlist_audio_features(sess_username, sess_access_token, sp)

@@ -86,8 +86,8 @@
     .step-card {
       background-color: #1a1a2e;
       border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
+      padding: 16px;
+      margin-bottom: 12px;
     }
     .step-number {
       display: inline-flex;
@@ -131,6 +131,43 @@
       font-size: 0.8rem;
       color: #888;
       margin-left: 10px;
+    }
+    .progress-indicator {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 8px;
+    }
+    .progress-step {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-color: #2c3e50;
+      color: #888;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    .progress-step.active {
+      background-color: #1db954;
+      color: white;
+    }
+    .progress-step.completed {
+      background-color: #1db954;
+      color: white;
+    }
+    .progress-line {
+      width: 40px;
+      height: 3px;
+      background-color: #2c3e50;
+      transition: background-color 0.3s;
+    }
+    .progress-line.completed {
+      background-color: #1db954;
     }
     #mood-profile {
       display: none;
@@ -176,11 +213,23 @@
         gap: 10px;
       }
       .step-card {
-        padding: 16px;
+        padding: 14px;
         border-radius: 10px;
+        margin-bottom: 10px;
       }
       .step-header h4 {
         font-size: 1.1rem;
+      }
+      .progress-indicator {
+        margin-bottom: 14px;
+      }
+      .progress-step {
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+      }
+      .progress-line {
+        width: 30px;
       }
       #playlists-container {
         max-height: 50vh !important;
@@ -237,26 +286,24 @@
     </div>
   </nav>
 
-  <div id="loading" style="display:none; text-align:center; padding: 50px;">
-    <img src="../static/images/loading.gif" alt="Please wait..." />
-    <p>Analyzing your playlist...</p>
-  </div>
-
-  <div class="jumbotron text-center">
-    <h1>Magic Music Generator</h1>
-    <p class="lead">Create playlists based on the mood of your existing playlists</p>
-  </div>
-
-  <div class="container">
+  <div class="container mt-4">
+    <!-- Progress Indicator -->
+    <div class="progress-indicator">
+      <div class="progress-step active" id="prog-1">1</div>
+      <div class="progress-line" id="prog-line-1"></div>
+      <div class="progress-step" id="prog-2">2</div>
+      <div class="progress-line" id="prog-line-2"></div>
+      <div class="progress-step" id="prog-3">3</div>
+    </div>
     <!-- Step 1: Select Playlist -->
     <div class="step-card" id="step-1">
-      <div class="step-header mb-3">
+      <div class="step-header mb-2">
         <span class="step-number">1</span>
         <h4>Select a Playlist</h4>
       </div>
       <div class="collapsed-summary" id="step-1-summary"></div>
       <div class="step-content">
-        <p class="text-muted">Choose a playlist as your mood template</p>
+        <p class="text-muted small mb-2">Choose a playlist as your mood template</p>
 
         <div id="playlists-loading" class="text-center py-4">
           <p>Loading your playlists...</p>
@@ -274,13 +321,13 @@
 
     <!-- Step 2: Mood Profile -->
     <div class="step-card" id="mood-profile">
-      <div class="step-header mb-3">
+      <div class="step-header mb-2">
         <span class="step-number">2</span>
         <h4>Mood Profile</h4>
       </div>
       <div class="collapsed-summary" id="step-2-summary"></div>
       <div class="step-content">
-        <p class="text-muted mb-3">Based on <strong id="analyzed-playlist-name"></strong></p>
+        <p class="text-muted small mb-2">Based on <strong id="analyzed-playlist-name"></strong></p>
 
         <div class="row">
           <div class="col-12 col-md-6 mood-scores-container">
@@ -301,11 +348,11 @@
 
     <!-- Step 3: Generator Settings -->
     <div class="step-card" id="generator-settings">
-      <div class="step-header mb-3">
+      <div class="step-header mb-2">
         <span class="step-number">3</span>
         <h4>Generate Playlist</h4>
       </div>
-      <p class="text-muted mb-4">Combine mood profile with your preferences</p>
+      <p class="text-muted small mb-3">Combine mood profile with your preferences</p>
 
       <div class="row">
         <div class="col-12 col-md-6 mb-4">
@@ -432,17 +479,33 @@
       $('#analyze-playlist-btn').prop('disabled', false);
     });
 
+    // Update progress indicator
+    function updateProgress(step) {
+      // Reset all
+      $('.progress-step').removeClass('active completed');
+      $('.progress-line').removeClass('completed');
+
+      // Mark completed steps
+      for (var i = 1; i < step; i++) {
+        $('#prog-' + i).addClass('completed');
+        $('#prog-line-' + i).addClass('completed');
+      }
+      // Mark current step active
+      $('#prog-' + step).addClass('active');
+    }
+
     // Analyze playlist
     $('#analyze-playlist-btn').click(function(e) {
       e.stopPropagation(); // Prevent triggering collapsed handler
       if (!selectedPlaylistId) return;
 
       $(this).prop('disabled', true).text('Analyzing...');
-      $('#loading').show();
 
       $.get('/api/playlist/' + selectedPlaylistId + '/analyze', function(response) {
-        $('#loading').hide();
         $('#analyze-playlist-btn').prop('disabled', false).text('Analyze Selected Playlist');
+
+        // Update progress
+        updateProgress(2);
 
         // Collapse step 1 and set summary
         $('#step-1').addClass('collapsed');
@@ -475,7 +538,6 @@
           scrollTop: $('#mood-profile').offset().top - 20
         }, 300);
       }).fail(function(xhr) {
-        $('#loading').hide();
         $('#analyze-playlist-btn').prop('disabled', false).text('Analyze Selected Playlist');
         if (xhr.status === 401) {
           alert('Session expired. Please log in again.');
@@ -489,6 +551,9 @@
     // Continue to generator
     $('#continue-to-generator').click(function(e) {
       e.stopPropagation(); // Prevent triggering collapsed handler
+
+      // Update progress
+      updateProgress(3);
 
       // Collapse step 2 and set summary
       $('#mood-profile').addClass('collapsed');
@@ -516,8 +581,10 @@
       if (stepId === 'step-1') {
         $('#mood-profile').addClass('collapsed').hide();
         $('#generator-settings').hide();
+        updateProgress(1);
       } else if (stepId === 'mood-profile') {
         $('#generator-settings').hide();
+        updateProgress(2);
       }
     });
 

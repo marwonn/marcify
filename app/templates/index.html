@@ -111,6 +111,27 @@
       flex: 1;
       min-width: 200px;
     }
+    .step-card.collapsed {
+      cursor: pointer;
+    }
+    .step-card.collapsed .step-content {
+      display: none;
+    }
+    .step-card .collapsed-summary {
+      display: none;
+      color: #1db954;
+      font-size: 0.95rem;
+      margin-left: 42px;
+    }
+    .step-card.collapsed .collapsed-summary {
+      display: block;
+    }
+    .step-card.collapsed .step-header::after {
+      content: '(tap to change)';
+      font-size: 0.8rem;
+      color: #888;
+      margin-left: 10px;
+    }
     #mood-profile {
       display: none;
     }
@@ -233,19 +254,22 @@
         <span class="step-number">1</span>
         <h4>Select a Playlist</h4>
       </div>
-      <p class="text-muted">Choose a playlist as your mood template</p>
+      <div class="collapsed-summary" id="step-1-summary"></div>
+      <div class="step-content">
+        <p class="text-muted">Choose a playlist as your mood template</p>
 
-      <div id="playlists-loading" class="text-center py-4">
-        <p>Loading your playlists...</p>
+        <div id="playlists-loading" class="text-center py-4">
+          <p>Loading your playlists...</p>
+        </div>
+
+        <div id="playlists-container" style="max-height: 350px; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+          <!-- Playlists will be loaded here -->
+        </div>
+
+        <button id="analyze-playlist-btn" class="btn btn-primary btn-block btn-lg mt-3" disabled>
+          Analyze Selected Playlist
+        </button>
       </div>
-
-      <div id="playlists-container" style="max-height: 350px; overflow-y: auto; -webkit-overflow-scrolling: touch;">
-        <!-- Playlists will be loaded here -->
-      </div>
-
-      <button id="analyze-playlist-btn" class="btn btn-primary btn-block btn-lg mt-3" disabled>
-        Analyze Selected Playlist
-      </button>
     </div>
 
     <!-- Step 2: Mood Profile -->
@@ -254,22 +278,25 @@
         <span class="step-number">2</span>
         <h4>Mood Profile</h4>
       </div>
-      <p class="text-muted mb-3">Based on <strong id="analyzed-playlist-name"></strong></p>
+      <div class="collapsed-summary" id="step-2-summary"></div>
+      <div class="step-content">
+        <p class="text-muted mb-3">Based on <strong id="analyzed-playlist-name"></strong></p>
 
-      <div class="row">
-        <div class="col-12 col-md-6 mood-scores-container">
-          <h5 class="mb-3">Mood Scores</h5>
-          <div id="mood-scores"></div>
+        <div class="row">
+          <div class="col-12 col-md-6 mood-scores-container">
+            <h5 class="mb-3">Mood Scores</h5>
+            <div id="mood-scores"></div>
+          </div>
+          <div class="col-12 col-md-6 mood-tags-container">
+            <h5 class="mb-3">Top Tags</h5>
+            <div id="mood-tags"></div>
+          </div>
         </div>
-        <div class="col-12 col-md-6 mood-tags-container">
-          <h5 class="mb-3">Top Tags</h5>
-          <div id="mood-tags"></div>
-        </div>
+
+        <button id="continue-to-generator" class="btn btn-success btn-block btn-lg mt-4">
+          Continue to Generator
+        </button>
       </div>
-
-      <button id="continue-to-generator" class="btn btn-success btn-block btn-lg mt-4">
-        Continue to Generator
-      </button>
     </div>
 
     <!-- Step 3: Generator Settings -->
@@ -416,6 +443,10 @@
         $('#loading').hide();
         $('#analyze-playlist-btn').prop('disabled', false).text('Analyze Selected Playlist');
 
+        // Collapse step 1 and set summary
+        $('#step-1').addClass('collapsed');
+        $('#step-1-summary').text(selectedPlaylistName);
+
         // Show mood profile
         $('#analyzed-playlist-name').text(selectedPlaylistName);
 
@@ -439,6 +470,9 @@
         $('#mood-tags').html(tagsHtml);
 
         $('#mood-profile').slideDown();
+        $('html, body').animate({
+          scrollTop: $('#mood-profile').offset().top - 20
+        }, 300);
       }).fail(function(xhr) {
         $('#loading').hide();
         $('#analyze-playlist-btn').prop('disabled', false).text('Analyze Selected Playlist');
@@ -453,10 +487,35 @@
 
     // Continue to generator
     $('#continue-to-generator').click(function() {
+      // Collapse step 2 and set summary
+      $('#mood-profile').addClass('collapsed');
+      var topTags = [];
+      $('#mood-tags .mood-tag').slice(0, 3).each(function() {
+        topTags.push($(this).text());
+      });
+      $('#step-2-summary').text(topTags.join(', '));
+
       $('#generator-settings').slideDown();
       $('html, body').animate({
         scrollTop: $('#generator-settings').offset().top - 20
-      }, 500);
+      }, 300);
+    });
+
+    // Click on collapsed step to expand it
+    $(document).on('click', '.step-card.collapsed', function() {
+      var $this = $(this);
+      var stepId = $this.attr('id');
+
+      // Expand this step
+      $this.removeClass('collapsed');
+
+      // Collapse following steps and hide them
+      if (stepId === 'step-1') {
+        $('#mood-profile').addClass('collapsed').hide();
+        $('#generator-settings').hide();
+      } else if (stepId === 'mood-profile') {
+        $('#generator-settings').hide();
+      }
     });
 
     // Generate playlist

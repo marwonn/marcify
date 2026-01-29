@@ -296,7 +296,7 @@ def generate_playlist_from_profile_and_artist(profile, seed_artist, token, varie
     - Variety (how many different artists)
     - Discovery (balance between profile tags and seed artist)
     """
-    from app.helper.recommendations import get_similar_artists_lastfm, search_artist_top_tracks_spotify
+    from app.helper.recommendations import get_similar_artists_lastfm, search_artist_top_tracks_spotify, search_by_genre_spotify
 
     collected_tracks = []
     seen_uris = set()
@@ -309,46 +309,85 @@ def generate_playlist_from_profile_and_artist(profile, seed_artist, token, varie
 
     # Part 1: Get tracks based on profile tags
     if profile and profile.get('top_tags'):
-        tags_to_use = profile['top_tags'][:variety]
-        tracks_per_tag = max(1, profile_tracks_target // len(tags_to_use)) + 1
+        tags_to_use = profile['top_tags'][:max(3, variety)]
 
         for tag, count in tags_to_use:
             if len(collected_tracks) >= profile_tracks_target:
                 break
 
-            tag_artists = get_artists_by_tag(tag, limit=3)
+            # Get more artists per tag to have better results
+            tag_artists = get_artists_by_tag(tag, limit=5)
+
             for artist in tag_artists:
                 if len(collected_tracks) >= profile_tracks_target:
                     break
 
-                tracks = search_artist_top_tracks_spotify(artist, token, limit=2)
+                tracks = search_artist_top_tracks_spotify(artist, token, limit=3)
                 for track in tracks:
-                    if track and track.get('uri') not in seen_uris:
+                    if track and track.get('uri') and track.get('uri') not in seen_uris:
                         collected_tracks.append(track)
                         seen_uris.add(track['uri'])
                         if len(collected_tracks) >= profile_tracks_target:
                             break
 
     # Part 2: Get tracks based on seed artist and similar artists
-    if seed_artist:
+    if seed_artist and seed_artist.strip():
+        seed_artist = seed_artist.strip()
+
         # Get seed artist's top tracks
-        seed_tracks = search_artist_top_tracks_spotify(seed_artist, token, limit=seed_tracks_target // 2 + 1)
+        seed_tracks = search_artist_top_tracks_spotify(seed_artist, token, limit=5)
         for track in seed_tracks:
-            if track and track.get('uri') not in seen_uris:
+            if track and track.get('uri') and track.get('uri') not in seen_uris:
                 collected_tracks.append(track)
                 seen_uris.add(track['uri'])
                 if len(collected_tracks) >= limit:
                     break
 
         # Get similar artists
-        similar_artists = get_similar_artists_lastfm(seed_artist, limit=variety)
+        similar_artists = get_similar_artists_lastfm(seed_artist, limit=max(5, variety))
         for artist in similar_artists:
             if len(collected_tracks) >= limit:
                 break
 
-            tracks = search_artist_top_tracks_spotify(artist, token, limit=2)
+            tracks = search_artist_top_tracks_spotify(artist, token, limit=3)
             for track in tracks:
-                if track and track.get('uri') not in seen_uris:
+                if track and track.get('uri') and track.get('uri') not in seen_uris:
+                    collected_tracks.append(track)
+                    seen_uris.add(track['uri'])
+                    if len(collected_tracks) >= limit:
+                        break
+
+    # Fallback: If we still don't have enough tracks, use genre search
+    if len(collected_tracks) < limit:
+        # Try to get genres from profile or use defaults
+        fallback_genres = []
+        if profile and profile.get('genres'):
+            fallback_genres = profile['genres'][:3]
+        if not fallback_genres:
+            fallback_genres = ['rock', 'pop', 'indie']
+
+        for genre in fallback_genres:
+            if len(collected_tracks) >= limit:
+                break
+
+            genre_tracks = search_by_genre_spotify(genre, token, limit=10)
+            for track in genre_tracks:
+                if track and track.get('uri') and track.get('uri') not in seen_uris:
+                    collected_tracks.append(track)
+                    seen_uris.add(track['uri'])
+                    if len(collected_tracks) >= limit:
+                        break
+
+    # Final fallback: Search by profile tags as keywords
+    if len(collected_tracks) < limit and profile and profile.get('top_tags'):
+        for tag, count in profile['top_tags'][:10]:
+            if len(collected_tracks) >= limit:
+                break
+
+            # Search tracks directly by tag name
+            genre_tracks = search_by_genre_spotify(tag, token, limit=5)
+            for track in genre_tracks:
+                if track and track.get('uri') and track.get('uri') not in seen_uris:
                     collected_tracks.append(track)
                     seen_uris.add(track['uri'])
                     if len(collected_tracks) >= limit:

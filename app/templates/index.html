@@ -433,7 +433,8 @@
     });
 
     // Analyze playlist
-    $('#analyze-playlist-btn').click(function() {
+    $('#analyze-playlist-btn').click(function(e) {
+      e.stopPropagation(); // Prevent triggering collapsed handler
       if (!selectedPlaylistId) return;
 
       $(this).prop('disabled', true).text('Analyzing...');
@@ -486,7 +487,9 @@
     });
 
     // Continue to generator
-    $('#continue-to-generator').click(function() {
+    $('#continue-to-generator').click(function(e) {
+      e.stopPropagation(); // Prevent triggering collapsed handler
+
       // Collapse step 2 and set summary
       $('#mood-profile').addClass('collapsed');
       var topTags = [];

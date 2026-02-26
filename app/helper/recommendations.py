@@ -93,15 +93,18 @@ def search_track_on_spotify(track_name, artist_name, token):
 
 def search_artist_top_tracks_spotify(artist_name, token, limit=3):
     """
-    Search for an artist on Spotify and get their top tracks.
-    Fallback when Last.fm is not available.
+    Get top tracks for an artist via Spotify search.
+    Note: GET /artists/{id}/top-tracks was removed in Feb 2026 Dev Mode changes.
+    We now use search with artist filter instead.
     """
-    # First, find the artist
+    # Enforce the new max limit of 10
+    limit = min(limit, 10)
+
     url = "https://api.spotify.com/v1/search"
     params = {
         "q": f'artist:"{artist_name}"',
-        "type": "artist",
-        "limit": 1,
+        "type": "track",
+        "limit": limit,
         "market": "DE"
     }
     headers = {"Authorization": f"Bearer {token}"}
@@ -112,19 +115,17 @@ def search_artist_top_tracks_spotify(artist_name, token, limit=3):
             return []
 
         data = response.json()
-        if not data["artists"]["items"]:
-            return []
+        tracks = data.get("tracks", {}).get("items", [])
 
-        artist_id = data["artists"]["items"][0]["id"]
+        # Filter to only include tracks actually by this artist
+        artist_lower = artist_name.lower()
+        filtered = [
+            t for t in tracks
+            if any(artist_lower in a["name"].lower() for a in t.get("artists", []))
+        ]
 
-        # Get top tracks for this artist
-        top_tracks_url = f"https://api.spotify.com/v1/artists/{artist_id}/top-tracks"
-        params = {"market": "DE"}
-        response = requests.get(top_tracks_url, params=params, headers=headers, timeout=10)
-
-        if response.status_code == 200:
-            tracks_data = response.json()
-            return tracks_data.get("tracks", [])[:limit]
+        # Fall back to unfiltered if strict match returns nothing
+        return (filtered or tracks)[:limit]
     except Exception:
         pass
 
@@ -135,7 +136,9 @@ def search_by_genre_spotify(genre, token, limit=10):
     """
     Search for tracks by genre on Spotify.
     Fallback method when artist-based search yields few results.
+    Note: max limit is 10 in Dev Mode since Feb 2026.
     """
+    limit = min(limit, 10)  # Enforce new Dev Mode limit
     url = "https://api.spotify.com/v1/search"
     params = {
         "q": f'genre:"{genre}"',

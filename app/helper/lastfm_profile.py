@@ -267,9 +267,10 @@ def get_user_playlists(token, limit=50):
 def get_playlist_tracks(token, playlist_id, limit=50):
     """
     Get tracks from a specific playlist.
+    Note: /playlists/{id}/tracks was renamed to /playlists/{id}/items in Feb 2026 Dev Mode changes.
     """
-    url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
-    params = {"limit": limit, "fields": "items(track(name,artists,uri,album))"}
+    url = f"https://api.spotify.com/v1/playlists/{playlist_id}/items"
+    params = {"limit": min(limit, 50), "fields": "items(track(name,artists,uri,album))"}
     headers = {"Authorization": f"Bearer {token}"}
 
     try:

@@ -24,8 +24,9 @@ def create_playlist(username, token, data):
     if not uris:
         return False
 
-    # Create new playlist
-    endpoint_url = f"https://api.spotify.com/v1/users/{username}/playlists"
+    # Create new playlist via /me/playlists
+    # Note: POST /users/{user_id}/playlists was removed in Feb 2026 Dev Mode changes
+    endpoint_url = "https://api.spotify.com/v1/me/playlists"
     request_body = json.dumps({
         "name": playlist_name,
         "description": "Created by Magic Music Generator",
@@ -47,8 +48,9 @@ def create_playlist(username, token, data):
     if not playlist_id:
         return False
 
-    # Add tracks to playlist
-    endpoint_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+    # Add tracks to playlist via /items
+    # Note: POST /playlists/{id}/tracks was renamed to /items in Feb 2026 Dev Mode changes
+    endpoint_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/items"
     request_body = json.dumps({"uris": uris})
 
     response = requests.post(

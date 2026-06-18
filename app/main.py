@@ -15,10 +15,24 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 
+def clear_auth_session():
+    """Discard all stored auth state so the next request triggers a fresh sign-in."""
+    session.pop('access_token', None)
+    session.pop('refresh_token', None)
+    session.pop('token_create', None)
+    session.pop('spotify_username', None)
+
+
 def refresh_token_if_needed():
     """
     Check if the access token is expired and refresh it if needed.
     Returns the valid access_token or None if refresh failed.
+
+    Spotify refresh tokens expire after six months (effective 2026-07-20). A
+    refresh against an expired/revoked token returns an `invalid_grant` error.
+    In that case the stored token is discarded (no retry) so the caller can send
+    the user through the sign-in flow again. Transient errors (network/5xx) keep
+    the stored token so the user can simply retry.
     """
     sess_access_token = session.get("access_token")
     sess_refresh_token = session.get('refresh_token')
@@ -33,23 +47,43 @@ def refresh_token_if_needed():
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         payload = {"grant_type": "refresh_token", "refresh_token": sess_refresh_token}
 
-        resp = requests.post(
-            token_url,
-            headers=headers,
-            data=payload,
-            auth=requests.auth.HTTPBasicAuth(
-                app.config['SPOTIFY_CLIENT_ID'],
-                app.config['SPOTIFY_CLIENT_SECRET']
+        try:
+            resp = requests.post(
+                token_url,
+                headers=headers,
+                data=payload,
+                auth=requests.auth.HTTPBasicAuth(
+                    app.config['SPOTIFY_CLIENT_ID'],
+                    app.config['SPOTIFY_CLIENT_SECRET']
+                ),
+                timeout=10
             )
-        )
+        except requests.RequestException:
+            # Transient network error: keep the token, let the user retry later.
+            return None
 
         if 200 <= resp.status_code <= 299:
             parsed_resp = resp.json()
             session['access_token'] = parsed_resp['access_token']
             session['token_create'] = time.time()  # Update the token creation time
+            # Spotify may rotate the refresh token on use; persist the new one.
+            if parsed_resp.get('refresh_token'):
+                session['refresh_token'] = parsed_resp['refresh_token']
             return parsed_resp['access_token']
-        else:
-            return None
+
+        # Non-2xx: figure out whether the refresh token is permanently invalid.
+        error = ""
+        try:
+            error = resp.json().get('error', '')
+        except ValueError:
+            pass
+
+        if error == 'invalid_grant':
+            # Refresh token expired or revoked -> discard it (do NOT retry) and
+            # force a fresh sign-in on the next request.
+            clear_auth_session()
+
+        return None
 
     return sess_access_token
 
